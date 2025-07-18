@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body class="bg-gray-100 text-gray-800">
 
@@ -51,26 +51,19 @@
 
         <!-- Secciones de Activos y Pasivos -->
         <main class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <!-- Columna de Activos -->
             <section id="activos-container">
                 <h2 class="text-2xl font-bold mb-6 flex items-center text-green-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                     Activos
                 </h2>
-                <div id="activos-list" class="space-y-4">
-                    <!-- Las tarjetas de activos se generarán aquí dinámicamente -->
-                </div>
+                <div id="activos-list" class="space-y-4"></div>
             </section>
-
-            <!-- Columna de Pasivos -->
             <section id="pasivos-container">
                 <h2 class="text-2xl font-bold mb-6 flex items-center text-red-700">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="17" y1="11" x2="23" y2="11"></line></svg>
                     Pasivos
                 </h2>
-                <div id="pasivos-list" class="space-y-4">
-                     <!-- Las tarjetas de pasivos se generarán aquí dinámicamente -->
-                </div>
+                <div id="pasivos-list" class="space-y-4"></div>
             </section>
         </main>
     </div>
@@ -82,14 +75,14 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // Your web app's Firebase configuration will be populated by Netlify
+        // Your web app's Firebase configuration - AHORA CON LAS CREDENCIALES REALES
         const firebaseConfig = {
-            apiKey: "%VITE_API_KEY%",
-            authDomain: "%VITE_AUTH_DOMAIN%",
-            projectId: "%VITE_PROJECT_ID%",
-            storageBucket: "%VITE_STORAGE_BUCKET%",
-            messagingSenderId: "%VITE_MESSAGING_SENDER_ID%",
-            appId: "%VITE_APP_ID%"
+          apiKey: "AIzaSyBxB8IwYDVN8I22uZLUTE_ps4YTzAPEi2A",
+          authDomain: "reporte-financiero-b8449.firebaseapp.com",
+          projectId: "reporte-financiero-b8449",
+          storageBucket: "reporte-financiero-b8449.appspot.com",
+          messagingSenderId: "59867653983",
+          appId: "1:59867653983:web:5343523a67bb0c533fb8ea"
         };
 
         // Initialize Firebase
@@ -107,6 +100,6 @@
     </script>
     
     <!-- Custom JS -->
-    <script type="module" src="script.js"></script>
+    <script type="module" src="./script.js"></script>
 </body>
 </html>
