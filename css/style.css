@@ -1,0 +1,25 @@
+/* Estilos generales del cuerpo del documento */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Estilos para los campos de entrada numéricos */
+.card-input {
+    transition: all 0.3s ease;
+}
+
+/* Efecto de foco para los campos de entrada */
+.card-input:focus {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Estilos para las tarjetas de resumen */
+.summary-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Efecto hover para las tarjetas de resumen */
+.summary-card:hover {
+    transform: translateY(-5px);
+}
