@@ -15,17 +15,64 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M15 18l-6-6 6-6"/></svg>
                 Volver al Panel
             </a>
-            <h1 id="detail-title" class="text-3xl md:text-4xl font-bold text-gray-900">Cheques por Cobrar</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Cheques por Cobrar</h1>
         </header>
-        <main id="detail-content" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
-             <!-- La tabla con los cheques se insertará aquí -->
+
+        <!-- Formulario de Carga de Datos -->
+        <section class="mb-10 bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Cargar Nuevo Cheque</h2>
+            <form id="data-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label for="fecha_emision" class="form-label">Fecha de Emisión</label>
+                    <input type="date" id="fecha_emision" name="fecha_emision" class="form-input" required>
+                </div>
+                <div>
+                    <label for="fecha_cobro" class="form-label">Fecha de Cobro</label>
+                    <input type="date" id="fecha_cobro" name="fecha_cobro" class="form-input" required>
+                </div>
+                <div>
+                    <label for="numero_cheque" class="form-label">Número de Cheque</label>
+                    <input type="text" id="numero_cheque" name="numero_cheque" class="form-input" required>
+                </div>
+                 <div>
+                    <label for="librador" class="form-label">Librador (Quién lo emite)</label>
+                    <input type="text" id="librador" name="librador" class="form-input" required>
+                </div>
+                 <div>
+                    <label for="banco" class="form-label">Banco</label>
+                    <input type="text" id="banco" name="banco" class="form-input" required>
+                </div>
+                <div>
+                    <label for="monto" class="form-label">Monto</label>
+                    <input type="number" id="monto" name="monto" step="0.01" class="form-input" required>
+                </div>
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label for="estado" class="form-label">Estado</label>
+                    <select id="estado" name="estado" class="form-input">
+                        <option value="En cartera">En cartera</option>
+                        <option value="Depositado">Depositado</option>
+                        <option value="Cobrado">Cobrado</option>
+                        <option value="Rechazado">Rechazado</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 lg:col-span-3">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        Agregar Cheque
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabla de Detalles -->
+        <main id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
             <p>Cargando detalles...</p>
         </main>
     </div>
 
     <script>
+        // Configuración específica para esta página
         window.pageData = {
-            itemName: "Cheques a Cobrar", // Debe coincidir con el nombre en Firebase
+            itemName: "Cheques a Cobrar", // Debe coincidir con el nombre en el documento de Firebase
             subcollectionName: "cheques_detalle"
         };
     </script>
