@@ -15,17 +15,66 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M15 18l-6-6 6-6"/></svg>
                 Volver al Panel
             </a>
-            <h1 id="detail-title" class="text-3xl md:text-4xl font-bold text-gray-900">Clientes por Cobrar</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Clientes por Cobrar</h1>
         </header>
-        <main id="detail-content" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
-             <!-- La tabla con las facturas de clientes se insertará aquí -->
+
+        <!-- Formulario de Carga de Datos -->
+        <section class="mb-10 bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Cargar Nueva Factura</h2>
+            <form id="data-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="fecha" class="form-label">Fecha</label>
+                    <input type="date" id="fecha" name="fecha" class="form-input" required>
+                </div>
+                <div>
+                    <label for="nombre" class="form-label">Nombre Cliente</label>
+                    <input type="text" id="nombre" name="nombre" class="form-input" required>
+                </div>
+                <div>
+                    <label for="numero_factura" class="form-label">Nº Factura</label>
+                    <input type="text" id="numero_factura" name="numero_factura" class="form-input" required>
+                </div>
+                <div>
+                    <label for="fecha_vencimiento" class="form-label">Vencimiento</label>
+                    <input type="date" id="fecha_vencimiento" name="fecha_vencimiento" class="form-input">
+                </div>
+                <div>
+                    <label for="saldo_bruto" class="form-label">Saldo Bruto</label>
+                    <input type="number" id="saldo_bruto" name="saldo_bruto" step="0.01" class="form-input" required>
+                </div>
+                <div>
+                    <label for="iva" class="form-label">IVA (21%)</label>
+                    <input type="number" id="iva" name="iva" step="0.01" class="form-input" readonly>
+                </div>
+                <div>
+                    <label for="saldo_neto" class="form-label">Saldo Neto</label>
+                    <input type="number" id="saldo_neto" name="saldo_neto" step="0.01" class="form-input" readonly>
+                </div>
+                <div>
+                    <label for="estado" class="form-label">Estado</label>
+                    <select id="estado" name="estado" class="form-input">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="Cobrado">Cobrado</option>
+                        <option value="Vencido">Vencido</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 lg:col-span-4">
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        Agregar Factura
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Tabla de Detalles -->
+        <main id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
             <p>Cargando detalles...</p>
         </main>
     </div>
 
     <script>
         window.pageData = {
-            itemName: "Clientes a Cobrar", // Debe coincidir con el nombre en Firebase
+            itemName: "Clientes a Cobrar",
             subcollectionName: "facturas"
         };
     </script>
