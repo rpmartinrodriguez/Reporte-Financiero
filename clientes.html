@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle - Clientes por Cobrar</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <a href="index.html" class="mb-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M15 18l-6-6 6-6"/></svg>
+                Volver al Panel
+            </a>
+            <h1 id="detail-title" class="text-3xl md:text-4xl font-bold text-gray-900">Clientes por Cobrar</h1>
+        </header>
+        <main id="detail-content" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
+             <!-- La tabla con las facturas de clientes se insertará aquí -->
+            <p>Cargando detalles...</p>
+        </main>
+    </div>
+
+    <script>
+        window.pageData = {
+            itemName: "Clientes a Cobrar", // Debe coincidir con el nombre en Firebase
+            subcollectionName: "facturas"
+        };
+    </script>
+    <script type="module" src="./js/detalle.js"></script>
+</body>
+</html>
