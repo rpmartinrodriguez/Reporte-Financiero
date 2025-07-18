@@ -4,102 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Control Financiero</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="./style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Mensaje de Carga -->
-    <div id="loading-indicator" class="fixed inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-50">
-        <div class="text-center">
-            <svg class="animate-spin h-10 w-10 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p class="mt-4 text-lg font-semibold text-gray-700">Cargando datos...</p>
-        </div>
-    </div>
-
     <div class="container mx-auto p-4 md:p-8">
-        <!-- Encabezado -->
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Panel de Control Financiero</h1>
-            <p class="text-gray-600 mt-2">Visualiza la salud financiera de tu negocio en tiempo real.</p>
+            <p class="text-gray-600 mt-2">Resumen general del estado de su negocio.</p>
         </header>
 
-        <!-- Resumen General -->
         <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="summary-card bg-white p-6 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between">
-                <h2 class="text-lg font-semibold text-gray-500">Total Activos</h2>
-                <p id="total-activos" class="text-3xl font-bold text-green-600 mt-2">$0.00</p>
-            </div>
-            <div class="summary-card bg-white p-6 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between">
-                <h2 class="text-lg font-semibold text-gray-500">Total Pasivos</h2>
-                <p id="total-pasivos" class="text-3xl font-bold text-red-600 mt-2">$0.00</p>
-            </div>
-            <div class="summary-card bg-white p-6 rounded-xl shadow-md border border-gray-200 flex flex-col justify-between">
-                <h2 class="text-lg font-semibold text-gray-500">Patrimonio Neto</h2>
-                <p id="patrimonio-neto" class="text-3xl font-bold text-blue-600 mt-2">$0.00</p>
-            </div>
+            <!-- Los totales se cargarán aquí -->
+            <div class="summary-card bg-white p-6 rounded-xl shadow-md"><h2 class="text-lg font-semibold text-gray-500">Total Activos</h2><p id="total-activos" class="text-3xl font-bold text-green-600 mt-2">Cargando...</p></div>
+            <div class="summary-card bg-white p-6 rounded-xl shadow-md"><h2 class="text-lg font-semibold text-gray-500">Total Pasivos</h2><p id="total-pasivos" class="text-3xl font-bold text-red-600 mt-2">Cargando...</p></div>
+            <div class="summary-card bg-white p-6 rounded-xl shadow-md"><h2 class="text-lg font-semibold text-gray-500">Patrimonio Neto</h2><p id="patrimonio-neto" class="text-3xl font-bold text-blue-600 mt-2">Cargando...</p></div>
         </section>
 
-        <!-- Secciones de Activos y Pasivos -->
         <main class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <section id="activos-container">
-                <h2 class="text-2xl font-bold mb-6 flex items-center text-green-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                    Activos
-                </h2>
-                <div id="activos-list" class="space-y-4"></div>
+            <section>
+                <h2 class="text-2xl font-bold mb-6 text-green-700">Activos</h2>
+                <div id="activos-list" class="space-y-4">
+                    <!-- Las tarjetas de activos se generarán aquí como enlaces -->
+                </div>
             </section>
-            <section id="pasivos-container">
-                <h2 class="text-2xl font-bold mb-6 flex items-center text-red-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="17" y1="11" x2="23" y2="11"></line></svg>
-                    Pasivos
-                </h2>
-                <div id="pasivos-list" class="space-y-4"></div>
+            <section>
+                <h2 class="text-2xl font-bold mb-6 text-red-700">Pasivos</h2>
+                <div id="pasivos-list" class="space-y-4">
+                    <!-- Las tarjetas de pasivos se generarán aquí -->
+                </div>
             </section>
         </main>
     </div>
 
-    <!-- Firebase SDK -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Your web app's Firebase configuration - AHORA CON LAS CREDENCIALES REALES
-        const firebaseConfig = {
-          apiKey: "AIzaSyBxB8IwYDVN8I22uZLUTE_ps4YTzAPEi2A",
-          authDomain: "reporte-financiero-b8449.firebaseapp.com",
-          projectId: "reporte-financiero-b8449",
-          storageBucket: "reporte-financiero-b8449.appspot.com",
-          messagingSenderId: "59867653983",
-          appId: "1:59867653983:web:5343523a67bb0c533fb8ea"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // Sign in anonymously
-        signInAnonymously(auth).catch((error) => {
-            console.error("Anonymous sign-in failed:", error);
-        });
-
-        // Make db available globally for our script.js
-        window.db = db;
-    </script>
-    
-    <!-- Custom JS -->
-    <script type="module" src="./script.js"></script>
+    <script type="module" src="./js/dashboard.js"></script>
 </body>
 </html>
