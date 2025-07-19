@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Elementos del DOM del nuevo dashboard
+// Elementos del DOM del dashboard
 const totalActivosEl = document.getElementById('total-activos');
 const totalPasivosEl = document.getElementById('total-pasivos');
 const activosListEl = document.getElementById('activos-list');
@@ -9,13 +9,12 @@ const pasivosListEl = document.getElementById('pasivos-list');
 
 const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 
-// Mapeo de nombres de items a nombres de archivos HTML
+// Mapeo de nombres de items a nombres de archivos HTML (ACTUALIZADO)
 const pageMapping = {
-    "Saldo Bancos": "bancos.html",
-    "Saldo Efectivo": "efectivo.html",
     "Clientes a Cobrar": "clientes.html",
-    "Cheques en cartera": "cheques.html"
-    // Agrega aquí más mapeos para pasivos cuando los crees
+    "Cheques en cartera": "cheques-cartera.html",
+    "Cheques pendiente de cobro": "cheques-pendientes.html"
+    // Agrega aquí más mapeos para 'Saldo Bancos', 'Saldo Efectivo' y pasivos
 };
 
 const itemsCollection = collection(db, 'items');
@@ -29,12 +28,8 @@ onSnapshot(itemsCollection, (snapshot) => {
 
     const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Ordenar para que aparezcan siempre en el mismo orden si se desea
-    // itemsData.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
     itemsData.forEach(item => {
-        // Crear la tarjeta de detalle interactiva
-        const href = pageMapping[item.nombre] || '#'; // Enlace o '#' si no hay página de detalle
+        const href = pageMapping[item.nombre] || '#';
         const card = document.createElement('a');
         card.href = href;
         card.className = 'detail-card-link';
@@ -58,13 +53,11 @@ onSnapshot(itemsCollection, (snapshot) => {
         }
     });
 
-    // Actualizar los totales generales
     totalActivosEl.textContent = formatCurrency(totalActivos);
     totalPasivosEl.textContent = formatCurrency(totalPasivos);
 
-    // Si una lista está vacía, mostrar un mensaje
     if (activosListEl.innerHTML === '') {
-        activosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de activo para mostrar.</p>';
+        activosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de activo para mostrar. Agrega datos desde el menú de navegación.</p>';
     }
     if (pasivosListEl.innerHTML === '') {
         pasivosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de pasivo para mostrar.</p>';
