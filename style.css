@@ -87,3 +87,40 @@ body { font-family: 'Inter', sans-serif; }
 .detail-card-link:hover {
     @apply shadow-lg border-blue-500 transform -translate-y-1;
 }
+
+/* Usamos Inter de Google Fonts para una apariencia limpia */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Estilos para los formularios */
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151; /* text-gray-700 */
+}
+
+.form-input {
+    display: block;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #D1D5DB; /* border-gray-300 */
+    border-radius: 0.5rem; /* rounded-lg */
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #2563EB; /* border-blue-600 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+
+.form-input[readonly] {
+    background-color: #F3F4F6; /* bg-gray-100 */
+    cursor: not-allowed;
+    color: #4B5563; /* text-gray-600 */
+}
