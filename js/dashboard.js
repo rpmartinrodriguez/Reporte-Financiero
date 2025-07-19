@@ -1,10 +1,9 @@
 import { db } from './firebase-config.js';
 import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// Elementos del DOM del dashboard
+// Elementos del DOM del nuevo dashboard
 const totalActivosEl = document.getElementById('total-activos');
 const totalPasivosEl = document.getElementById('total-pasivos');
-const patrimonioNetoEl = document.getElementById('patrimonio-neto');
 const activosListEl = document.getElementById('activos-list');
 const pasivosListEl = document.getElementById('pasivos-list');
 
@@ -12,10 +11,11 @@ const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'curre
 
 // Mapeo de nombres de items a nombres de archivos HTML
 const pageMapping = {
-    "Saldos Bancos": "bancos.html",
+    "Saldo Bancos": "bancos.html",
+    "Saldo Efectivo": "efectivo.html",
     "Clientes a Cobrar": "clientes.html",
-    "Cheques a Cobrar": "cheques.html"
-    // Agrega aquí más mapeos para otras páginas
+    "Cheques en cartera": "cheques.html"
+    // Agrega aquí más mapeos para pasivos cuando los crees
 };
 
 const itemsCollection = collection(db, 'items');
@@ -27,20 +27,25 @@ onSnapshot(itemsCollection, (snapshot) => {
     activosListEl.innerHTML = '';
     pasivosListEl.innerHTML = '';
 
-    snapshot.docs.forEach(doc => {
-        const item = { id: doc.id, ...doc.data() };
+    const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // Crear la tarjeta
+    // Ordenar para que aparezcan siempre en el mismo orden si se desea
+    // itemsData.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    itemsData.forEach(item => {
+        // Crear la tarjeta de detalle interactiva
         const href = pageMapping[item.nombre] || '#'; // Enlace o '#' si no hay página de detalle
-        const card = document.createElement(href === '#' ? 'div' : 'a');
-        if (href !== '#') card.href = href;
-
-        card.className = 'card-link-item block bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-lg hover:border-blue-500 transition-all duration-200';
+        const card = document.createElement('a');
+        card.href = href;
+        card.className = 'detail-card-link';
         
         card.innerHTML = `
             <div class="flex justify-between items-center">
-                <span class="text-md font-medium text-gray-700">${item.nombre}</span>
-                <span class="text-lg font-mono">${formatCurrency(item.valor)}</span>
+                <span class="text-lg font-medium text-gray-800">${item.nombre}</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl font-semibold text-gray-900">${formatCurrency(item.valor)}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                </div>
             </div>
         `;
 
@@ -53,8 +58,15 @@ onSnapshot(itemsCollection, (snapshot) => {
         }
     });
 
-    // Actualizar los totales del resumen
+    // Actualizar los totales generales
     totalActivosEl.textContent = formatCurrency(totalActivos);
     totalPasivosEl.textContent = formatCurrency(totalPasivos);
-    patrimonioNetoEl.textContent = formatCurrency(totalActivos - totalPasivos);
+
+    // Si una lista está vacía, mostrar un mensaje
+    if (activosListEl.innerHTML === '') {
+        activosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de activo para mostrar.</p>';
+    }
+    if (pasivosListEl.innerHTML === '') {
+        pasivosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de pasivo para mostrar.</p>';
+    }
 });
