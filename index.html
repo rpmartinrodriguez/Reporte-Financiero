@@ -13,30 +13,28 @@
     <nav class="bg-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <!-- Logo/Título -->
                 <div class="flex-shrink-0">
                     <a href="index.html" class="text-2xl font-bold text-blue-600">Panel Financiero</a>
                 </div>
-                <!-- Menú de Escritorio -->
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
-                        <a href="index.html" class="nav-link">MENU</a>
-                        <div class="relative">
-                            <button id="desktop-menu-button" class="nav-link group">
+                        <a href="index.html" class="nav-link">Dashboard</a>
+                        <div class="relative group">
+                            <button class="nav-link">
                                 <span>Cargar Datos</span>
                                 <svg class="w-4 h-4 ml-1 inline-block transition-transform duration-200 group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </button>
                             <div class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
                                 <div class="py-1" role="menu" aria-orientation="vertical">
                                     <a href="bancos.html" class="dropdown-item" role="menuitem">Saldos Bancos</a>
+                                    <a href="efectivo.html" class="dropdown-item" role="menuitem">Saldo Efectivo</a>
                                     <a href="clientes.html" class="dropdown-item" role="menuitem">Clientes por Cobrar</a>
-                                    <a href="cheques.html" class="dropdown-item" role="menuitem">Cheques por Cobrar</a>
+                                    <a href="cheques.html" class="dropdown-item" role="menuitem">Cheques en cartera</a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Botón de Menú Móvil -->
                 <div class="-mr-2 flex md:hidden">
                     <button id="mobile-menu-button" type="button" class="bg-gray-200 inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-800 hover:bg-gray-300 focus:outline-none">
                         <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
@@ -44,32 +42,48 @@
                 </div>
             </div>
         </div>
-        <!-- Menú Móvil (oculto por defecto) -->
         <div id="mobile-menu" class="md:hidden hidden">
             <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                 <a href="index.html" class="nav-link-mobile">Dashboard</a>
                 <h3 class="px-3 pt-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cargar Datos</h3>
                 <a href="bancos.html" class="nav-link-mobile">Saldos Bancos</a>
+                <a href="efectivo.html" class="nav-link-mobile">Saldo Efectivo</a>
                 <a href="clientes.html" class="nav-link-mobile">Clientes por Cobrar</a>
-                <a href="cheques.html" class="nav-link-mobile">Cheques por Cobrar</a>
+                <a href="cheques.html" class="nav-link-mobile">Cheques en cartera</a>
             </div>
         </div>
     </nav>
 
-    <!-- CONTENIDO PRINCIPAL DE LA PÁGINA -->
+    <!-- CONTENIDO PRINCIPAL DEL DASHBOARD -->
     <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Panel de Control Financiero</h1>
-            <p class="text-gray-600 mt-2">Resumen general del estado de su negocio.</p>
-        </header>
-        <section id="summary" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="summary-card bg-white p-6 rounded-xl shadow-md"><h2 class="text-lg font-semibold text-gray-500">Total Activos</h2><p id="total-activos" class="text-3xl font-bold text-green-600 mt-2">Cargando...</p></div>
-            <div class="summary-card bg-white p-6 rounded-xl shadow-md"><h2 class="text-lg font-semibold text-gray-500">Total Pasivos</h2><p id="total-pasivos" class="text-3xl font-bold text-red-600 mt-2">Cargando...</p></div>
-            <div class="summary-card bg-white p-6 rounded-xl shadow-md"><h2 class="text-lg font-semibold text-gray-500">Patrimonio Neto</h2><p id="patrimonio-neto" class="text-3xl font-bold text-blue-600 mt-2">Cargando...</p></div>
+        <!-- VISTA DE TOTALES GENERALES -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-semibold opacity-80">Total Activos</h2>
+                <p id="total-activos" class="text-5xl font-bold mt-2">Cargando...</p>
+            </div>
+            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-8 rounded-2xl shadow-lg">
+                <h2 class="text-xl font-semibold opacity-80">Total Pasivos</h2>
+                <p id="total-pasivos" class="text-5xl font-bold mt-2">Cargando...</p>
+            </div>
         </section>
+
+        <!-- DETALLE DE CUENTAS -->
         <main class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <section><h2 class="text-2xl font-bold mb-6 text-green-700">Activos</h2><div id="activos-list" class="space-y-4"></div></section>
-            <section><h2 class="text-2xl font-bold mb-6 text-red-700">Pasivos</h2><div id="pasivos-list" class="space-y-4"></div></section>
+            <!-- Columna de Activos -->
+            <section>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">Detalle del Activo</h2>
+                <div id="activos-list" class="space-y-4">
+                    <!-- Las tarjetas interactivas de activos se generarán aquí -->
+                </div>
+            </section>
+            <!-- Columna de Pasivos -->
+            <section>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">Detalle del Pasivo</h2>
+                <div id="pasivos-list" class="space-y-4">
+                    <!-- Las tarjetas interactivas de pasivos se generarán aquí -->
+                </div>
+            </section>
         </main>
     </div>
 
