@@ -4,7 +4,7 @@ import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getD
 // --- ELEMENTOS DEL DOM Y CONFIGURACIÓN ---
 const detailTableContainer = document.getElementById('detail-table-container');
 const dataForm = document.getElementById('data-form');
-const { itemName, subcollectionName } = window.pageData;
+const { itemName, subcollectionName, itemType } = window.pageData; // Obtenemos el tipo también
 
 const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 
@@ -42,7 +42,7 @@ function renderTable(docs) {
         const data = doc.data();
         headers.forEach(header => {
             const value = data[header];
-            const displayValue = (typeof value === 'number' && header.includes('saldo')) ? formatCurrency(value) : value;
+            const displayValue = (typeof value === 'number' && (header.includes('saldo') || header.includes('monto'))) ? formatCurrency(value) : value;
             tableHTML += `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${displayValue}</td>`;
         });
         tableHTML += '</tr>';
@@ -54,25 +54,40 @@ function renderTable(docs) {
 
 // --- LÓGICA PRINCIPAL DE LA PÁGINA ---
 async function setupDetailPage() {
-    if (!itemName || !subcollectionName) {
-        detailTableContainer.innerHTML = '<p class="text-red-500">Error: Configuración de página incompleta.</p>';
+    if (!itemName || !subcollectionName || !itemType) {
+        detailTableContainer.innerHTML = '<p class="text-red-500">Error: Configuración de página incompleta (falta itemName, subcollectionName o itemType).</p>';
         return;
     }
 
-    // 1. Encontrar el ID del documento principal (ej. "Clientes a Cobrar")
+    // 1. Encontrar o CREAR el documento principal
     const itemsRef = collection(db, 'items');
+    let mainDocRef;
+
     const q = query(itemsRef, where("nombre", "==", itemName));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-        console.error(`No se encontró el item principal '${itemName}'`);
-        return;
+        // ¡NO EXISTE! LO CREAMOS AUTOMÁTICAMENTE
+        console.log(`Item principal '${itemName}' no encontrado. Creándolo...`);
+        try {
+            const newMainDoc = await addDoc(itemsRef, {
+                nombre: itemName,
+                valor: 0,
+                tipo: itemType
+            });
+            mainDocRef = doc(db, 'items', newMainDoc.id); // Referencia al nuevo documento
+            console.log(`'${itemName}' creado con ID: ${mainDocRef.id}`);
+        } catch (error) {
+            console.error("Error creando el documento principal:", error);
+            return;
+        }
+    } else {
+        // Ya existe, obtenemos su referencia
+        mainDocRef = querySnapshot.docs[0].ref;
     }
-    const mainDocId = querySnapshot.docs[0].id;
-    const mainDocRef = doc(db, 'items', mainDocId);
 
     // 2. Escuchar cambios en la subcolección en tiempo real
-    const subcollectionRef = collection(db, 'items', mainDocId, subcollectionName);
+    const subcollectionRef = collection(mainDocRef, subcollectionName);
     onSnapshot(subcollectionRef, (snapshot) => {
         renderTable(snapshot.docs);
     });
@@ -84,34 +99,26 @@ async function setupDetailPage() {
         const newDocData = {};
         let amountToUpdate = 0;
 
-        // Convertir FormData a un objeto y determinar el monto a actualizar
         for (const [key, value] of formData.entries()) {
             const input = dataForm.elements[key];
             newDocData[key] = (input.type === 'number') ? parseFloat(value) : value;
         }
         
-        // El monto que afecta al total es el saldo_neto o el monto del movimiento
         amountToUpdate = newDocData.saldo_neto || newDocData.monto || 0;
 
         try {
-            // Usar una transacción para garantizar la consistencia de los datos
             await runTransaction(db, async (transaction) => {
                 const mainDoc = await transaction.get(mainDocRef);
-                if (!mainDoc.exists()) {
-                    throw "El documento principal no existe!";
-                }
-
-                // Calcular el nuevo total y actualizar el documento principal
+                if (!mainDoc.exists()) throw "El documento principal no existe!";
+                
                 const newTotal = (mainDoc.data().valor || 0) + amountToUpdate;
                 transaction.update(mainDocRef, { valor: newTotal });
-
-                // Agregar el nuevo documento a la subcolección
                 transaction.set(doc(subcollectionRef), newDocData);
             });
 
             console.log("¡Transacción completada con éxito!");
-            dataForm.reset(); // Limpiar el formulario
-            if (dataForm.elements.iva) dataForm.elements.iva.value = ''; // Limpiar campos readonly
+            dataForm.reset();
+            if (dataForm.elements.iva) dataForm.elements.iva.value = '';
             if (dataForm.elements.saldo_neto) dataForm.elements.saldo_neto.value = '';
 
         } catch (error) {
