@@ -66,3 +66,24 @@ body { font-family: 'Inter', sans-serif; }
 .nav-link-mobile {
     @apply block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100;
 }
+
+/* Estilos existentes */
+body { font-family: 'Inter', sans-serif; }
+.form-label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 500; color: #374151; }
+.form-input { display: block; width: 100%; padding: 0.75rem; border: 1px solid #D1D5DB; border-radius: 0.5rem; transition: border-color 0.2s, box-shadow 0.2s; }
+.form-input:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); }
+.form-input[readonly] { background-color: #F3F4F6; cursor: not-allowed; }
+
+/* Estilos de Navegación */
+.nav-link { @apply text-gray-600 hover:bg-gray-200 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors; }
+.dropdown-item { @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100; }
+.nav-link-mobile { @apply block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100; }
+
+/* NUEVOS ESTILOS PARA LAS TARJETAS DE DETALLE */
+.detail-card-link {
+    @apply block bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-200;
+}
+
+.detail-card-link:hover {
+    @apply shadow-lg border-blue-500 transform -translate-y-1;
+}
