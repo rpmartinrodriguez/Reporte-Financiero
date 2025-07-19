@@ -124,3 +124,32 @@ body {
     cursor: not-allowed;
     color: #4B5563; /* text-gray-600 */
 }
+
+/* Usamos Inter de Google Fonts para una apariencia limpia */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Estilos para formularios */
+.form-label{display:block;margin-bottom:.5rem;font-size:.875rem;font-weight:500;color:#374151}.form-input{display:block;width:100%;padding:.75rem;border:1px solid #d1d5db;border-radius:.5rem;transition:border-color .2s,box-shadow .2s}.form-input:focus{outline:0;border-color:#2563eb;box-shadow:0 0 0 2px rgba(59,130,246,.4)}.form-input[readonly]{background-color:#f3f4f6;cursor:not-allowed;color:#4b5563}
+
+/* NUEVOS ESTILOS PARA LA BARRA DE NAVEGACIÓN */
+.nav-link {
+    @apply text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200;
+}
+.dropdown-item {
+    @apply block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition-colors duration-150;
+}
+.nav-link-mobile {
+    @apply block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50;
+}
+
+/* NUEVOS ESTILOS PARA LAS TARJETAS DE DETALLE DEL DASHBOARD */
+.detail-card-link {
+    @apply block bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all duration-200;
+}
+.detail-card-link:hover {
+    @apply shadow-lg border-blue-500 transform -translate-y-1;
+}
