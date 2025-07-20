@@ -1,38 +1,30 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Lógica para el menú de navegación móvil (hamburger menu)
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    if (mobileMenuButton && mobileMenu) {
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
+const firebaseConfig = {
+  apiKey: "AIzaSyBxB8IwYDVN8I22uZLUTE_ps4YTzAPEi2A",
+  authDomain: "reporte-financiero-b8449.firebaseapp.com",
+  projectId: "reporte-financiero-b8449",
+  storageBucket: "reporte-financiero-b8449.appspot.com",
+  messagingSenderId: "59867653983",
+  appId: "1:59867653983:web:5343523a67bb0c533fb8ea"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const authReady = new Promise(resolve => {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      resolve(user);
     }
-
-    // NUEVA LÓGICA: Mostrar/ocultar formulario de carga de datos
-    const toggleFormButton = document.getElementById('toggle-form-button');
-    const formSection = document.getElementById('form-section');
-    const toggleIcon = document.getElementById('toggle-icon');
-
-    if (toggleFormButton && formSection) {
-        toggleFormButton.addEventListener('click', () => {
-            const isHidden = formSection.classList.contains('hidden');
-            
-            if (isHidden) {
-                formSection.classList.remove('hidden');
-                setTimeout(() => {
-                    formSection.style.maxHeight = formSection.scrollHeight + 'px';
-                    formSection.style.opacity = '1';
-                }, 10);
-                toggleIcon.style.transform = 'rotate(45deg)';
-            } else {
-                formSection.style.maxHeight = '0';
-                formSection.style.opacity = '0';
-                setTimeout(() => {
-                    formSection.classList.add('hidden');
-                }, 300); // La duración debe coincidir con la transición en CSS
-                toggleIcon.style.transform = 'rotate(0deg)';
-            }
-        });
-    }
+  });
 });
+
+signInAnonymously(auth).catch((error) => {
+    console.error("Fallo el inicio de sesión anónimo:", error);
+});
+
+export { db, authReady };
