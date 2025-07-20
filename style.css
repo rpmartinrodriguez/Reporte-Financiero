@@ -208,3 +208,58 @@ body {
 /* Estilos para el Modal de IA */
 #reminder-modal > div { animation: fadeIn 0.3s ease-out; }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* --- NUEVOS ESTILOS PARA EL CALENDARIO FINANCIERO --- */
+.calendar-day {
+    min-height: 100px;
+    padding: 0.5rem;
+    border: 1px solid #F3F4F6; /* border-gray-100 */
+    background-color: #ffffff;
+    transition: background-color 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-day.other-month {
+    background-color: #F9FAFB; /* bg-gray-50 */
+}
+
+.calendar-day.today {
+    background-color: #FEF3C7; /* bg-amber-100 */
+}
+
+.day-number {
+    font-weight: 500;
+    color: #374151; /* text-gray-700 */
+    font-size: 0.875rem;
+}
+
+.day-content {
+    margin-top: 0.25rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow: hidden;
+}
+
+.day-event {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.day-event.income {
+    background-color: #D1FAE5; /* bg-green-100 */
+    color: #065F46; /* text-green-800 */
+}
+
+.day-event.expense {
+    background-color: #FEE2E2; /* bg-red-100 */
+    color: #991B1B; /* text-red-800 */
+}
+
