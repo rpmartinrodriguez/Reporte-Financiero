@@ -263,3 +263,42 @@ body {
     color: #991B1B; /* text-red-800 */
 }
 
+/* --- ESTILOS PARA EL CALENDARIO INTERACTIVO --- */
+.calendar-day-link {
+    display: flex;
+    flex-direction: column;
+    min-height: 100px;
+    padding: 0.5rem;
+    border: 1px solid #F3F4F6;
+    background-color: #ffffff;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+}
+.calendar-day-link:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+    border-color: #3B82F6;
+}
+
+/* --- ESTILOS PARA LA PÁGINA DE DETALLE DIARIO --- */
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: #F9FAFB;
+    border-radius: 0.5rem;
+    border: 1px solid #F3F4F6;
+}
+.item-desc {
+    font-size: 0.875rem;
+    color: #4B5563;
+}
+.item-amount {
+    font-size: 0.875rem;
+    font-weight: 600;
+    font-family: monospace;
+}
+.item-amount.positive { color: #16A34A; }
+.item-amount.negative { color: #DC2626; }
