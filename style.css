@@ -302,3 +302,47 @@ body {
 }
 .item-amount.positive { color: #16A34A; }
 .item-amount.negative { color: #DC2626; }
+
+/* --- ESTILOS ACTUALIZADOS PARA EL CALENDARIO --- */
+.calendar-day-link {
+    display: flex;
+    flex-direction: column;
+    min-height: 110px; /* Un poco más alto para el saldo */
+    padding: 0.5rem;
+    border: 2px solid transparent; /* Borde transparente para mantener el tamaño */
+    background-color: #ffffff;
+    transition: all 0.2s ease-in-out;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+.calendar-day-link:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+.calendar-day.other-month { background-color: #F9FAFB; }
+.calendar-day.today .day-number {
+    background-color: #1D4ED8;
+    color: white;
+    border-radius: 9999px;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-balance {
+    margin-top: auto;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+/* Colores de fondo basados en el saldo */
+.positive-balance { background-color: #F0FDF4; /* green-50 */ }
+.positive-balance .day-balance { color: #15803D; /* green-700 */ }
+
+.negative-balance { background-color: #FEF2F2; /* red-50 */ }
+.negative-balance .day-balance { color: #B91C1C; /* red-700 */ }
