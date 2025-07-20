@@ -1,59 +1,69 @@
 import { db } from './firebase-config.js';
 import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- CONFIGURACIÓN ---
 const ITEM_NAME = "Cheques a pagar";
 const SUBCOLLECTION_NAME = "cheques_emitidos";
 const ITEM_TYPE = "pasivo";
 
-// --- ELEMENTOS DEL DOM ---
 const detailTableContainer = document.getElementById('detail-table-container');
 const dataForm = document.getElementById('data-form');
-
 const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 
-// --- RENDERIZADO DE LA TABLA ---
-function renderTable(docs) {
+function renderDetails(docs) {
     if (docs.length === 0) {
-        detailTableContainer.innerHTML = '<p>No hay cheques emitidos.</p>';
+        detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No hay cheques emitidos.</p>';
         return;
     }
-    let tableHTML = '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200"><thead><tr>';
-    const headers = Object.keys(docs[0].data());
-    headers.forEach(h => tableHTML += `<th class="th-style">${h.replace(/_/g, ' ')}</th>`);
-    tableHTML += '</tr></thead><tbody class="bg-white divide-y divide-gray-200">';
+    detailTableContainer.innerHTML = '<div class="details-grid"></div>';
+    const grid = detailTableContainer.querySelector('.details-grid');
     docs.forEach(doc => {
-        tableHTML += '<tr>';
         const data = doc.data();
-        headers.forEach(header => {
-            const value = data[header];
-            const displayValue = header === 'monto' ? formatCurrency(value) : value;
-            tableHTML += `<td class="td-style">${displayValue}</td>`;
-        });
-        tableHTML += '</tr>';
+        const card = document.createElement('div');
+        card.className = 'detail-card';
+        const statusClass = { 'Emitido': 'status-emitido' }[data.estado] || 'status-emitido';
+        card.innerHTML = `
+            <div class="card-header">
+                <h3 class="card-title">${data.destinatario || data.proveedor || 'N/A'}</h3>
+                <span class="status-badge ${statusClass}">${data.estado}</span>
+            </div>
+            <div class="card-body">
+                <div class="card-main-info">
+                    <p class="card-main-label">Monto del Cheque</p>
+                    <p class="card-amount negative">${formatCurrency(data.monto)}</p>
+                </div>
+                <div class="card-secondary-info">
+                    <div class="info-item">
+                        <p class="info-label">Fecha Emisión</p>
+                        <p class="info-value">${data.fecha_emision}</p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">Nº Cheque</p>
+                        <p class="info-value font-mono">${data.numero_cheque}</p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">Banco</p>
+                        <p class="info-value">${data.banco}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
     });
-    tableHTML += '</tbody></table></div>';
-    detailTableContainer.innerHTML = tableHTML;
 }
 
-// --- LÓGICA DE LA PÁGINA ---
 async function initializePage() {
     const itemsRef = collection(db, 'items');
     let mainDocRef;
     const q = query(itemsRef, where("nombre", "==", ITEM_NAME));
     const querySnapshot = await getDocs(q);
-
     if (querySnapshot.empty) {
         const newMainDoc = await addDoc(itemsRef, { nombre: ITEM_NAME, valor: 0, tipo: ITEM_TYPE });
         mainDocRef = doc(db, 'items', newMainDoc.id);
     } else {
         mainDocRef = querySnapshot.docs[0].ref;
     }
-
     const subcollectionRef = collection(mainDocRef, SUBCOLLECTION_NAME);
-    onSnapshot(subcollectionRef, (snapshot) => renderTable(snapshot.docs));
-
-    // Cargar nuevo cheque manualmente
+    onSnapshot(subcollectionRef, (snapshot) => renderDetails(snapshot.docs));
     dataForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(dataForm);
@@ -71,5 +81,4 @@ async function initializePage() {
         dataForm.reset();
     });
 }
-
 initializePage();
