@@ -1,50 +1,17 @@
 import { db } from './firebase-config.js';
 import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-const ITEM_NAME = "Cheques en cartera";
-const SUBCOLLECTION_NAME = "cheques_detalle_cartera";
+const ITEM_NAME = "Cheques pendiente de cobro";
+const SUBCOLLECTION_NAME = "cheques_detalle_pendientes";
 const ITEM_TYPE = "activo";
 
 const detailTableContainer = document.getElementById('detail-table-container');
 const dataForm = document.getElementById('data-form');
-const modal = document.getElementById('reminder-modal');
-const closeModalButton = document.getElementById('close-modal-button');
-const reminderText = document.getElementById('reminder-text');
-const copyButton = document.getElementById('copy-button');
-const loadingAI = document.getElementById('loading-ai');
-
 const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
-
-async function generateReminder(librador, monto, fechaCobro) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    loadingAI.classList.remove('hidden');
-    reminderText.classList.add('hidden');
-    copyButton.classList.add('hidden');
-    const prompt = `Escribe un recordatorio amigable y profesional para enviar por WhatsApp a nuestro cliente. El nombre del cliente es '${librador}'. El motivo es recordarle que tenemos un cheque suyo por un monto de ${formatCurrency(monto)} con fecha de cobro el ${fechaCobro}. El tono debe ser cordial pero claro, para asegurar que tenga los fondos disponibles en su cuenta en esa fecha. No incluyas placeholders como "[Tu Nombre]".`;
-    try {
-        const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`;
-        const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
-        const result = await response.json();
-        if (result.candidates && result.candidates.length > 0) {
-            reminderText.value = result.candidates[0].content.parts[0].text;
-            loadingAI.classList.add('hidden');
-            reminderText.classList.remove('hidden');
-            copyButton.classList.remove('hidden');
-        } else { throw new Error("No se recibió una respuesta válida de la IA."); }
-    } catch (error) {
-        console.error("Error llamando a la API de Gemini:", error);
-        reminderText.value = "Hubo un error al generar el recordatorio.";
-        loadingAI.classList.add('hidden');
-        reminderText.classList.remove('hidden');
-    }
-}
 
 function renderDetails(docs) {
     if (docs.length === 0) {
-        detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No hay cheques en cartera.</p>';
+        detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No hay cheques pendientes de cobro.</p>';
         return;
     }
     detailTableContainer.innerHTML = '<div class="details-grid"></div>';
@@ -53,7 +20,7 @@ function renderDetails(docs) {
         const data = doc.data();
         const card = document.createElement('div');
         card.className = 'detail-card';
-        const statusClass = { 'En cartera': 'status-en-cartera', 'Depositado': 'status-depositado' }[data.estado] || 'status-en-cartera';
+        const statusClass = { 'Pendiente de cobro': 'status-pendiente', 'Acreditado': 'status-acreditado', 'Rechazado': 'status-rechazado' }[data.estado] || 'status-pendiente';
         card.innerHTML = `
             <div class="card-header">
                 <h3 class="card-title">${data.librador}</h3>
@@ -79,20 +46,8 @@ function renderDetails(docs) {
                     </div>
                 </div>
             </div>
-            <div class="card-footer">
-                <button class="generate-reminder-btn text-sm bg-blue-100 text-blue-800 font-semibold py-1 px-3 rounded-full hover:bg-blue-200"
-                        data-librador="${data.librador}" data-monto="${data.monto}" data-fecha="${data.fecha_cobro}">
-                    ✨ Generar Recordatorio
-                </button>
-            </div>
         `;
         grid.appendChild(card);
-    });
-    grid.querySelectorAll('.generate-reminder-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const { librador, monto, fecha } = e.currentTarget.dataset;
-            generateReminder(librador, monto, fecha);
-        });
     });
 }
 
@@ -127,13 +82,4 @@ async function initializePage() {
         dataForm.reset();
     });
 }
-
-closeModalButton.addEventListener('click', () => modal.classList.add('hidden'));
-copyButton.addEventListener('click', () => {
-    reminderText.select();
-    document.execCommand('copy');
-    copyButton.textContent = '¡Copiado!';
-    setTimeout(() => { copyButton.textContent = 'Copiar Texto'; }, 2000);
-});
-
 initializePage();
