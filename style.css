@@ -245,3 +245,30 @@ body {
 .action-button.success:hover { background-color: #A7F3D0; }
 .action-button.danger { background-color: #FEF2F2; color: #991B1B; } /* Nuevo estilo */
 .action-button.danger:hover { background-color: #FEE2E2; } /* Nuevo estilo */
+
+/* NUEVOS ESTILOS PARA BÚSQUEDA Y FILTROS */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+.search-input {
+    flex-grow: 1;
+    min-width: 200px;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+}
+.filter-select {
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+}
+
+
