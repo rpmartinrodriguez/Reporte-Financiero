@@ -13,13 +13,11 @@ authReady.then(() => {
     const searchInput = document.getElementById('search-input');
     const statusFilter = document.getElementById('status-filter');
     const paginationContainer = document.getElementById('pagination-container');
-    // Modal de IA
     const reminderModal = document.getElementById('reminder-modal');
     const closeModalButton = document.getElementById('close-modal-button');
     const reminderText = document.getElementById('reminder-text');
     const copyButton = document.getElementById('copy-button');
     const loadingAI = document.getElementById('loading-ai');
-    // Modal de Depósito
     const depositModal = document.getElementById('deposit-modal');
     const closeDepositModalButton = document.getElementById('close-deposit-modal');
     const depositForm = document.getElementById('deposit-form');
@@ -33,6 +31,18 @@ authReady.then(() => {
 
     // --- FUNCIONES AUXILIARES ---
     const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
+
+    async function getOrCreateMainItemRef(itemName, itemType) {
+        const itemsRef = collection(db, 'items');
+        const q = query(itemsRef, where("nombre", "==", itemName));
+        let snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            const newDoc = await addDoc(itemsRef, { nombre: itemName, valor: 0, tipo: itemType });
+            return doc(db, 'items', newDoc.id);
+        } else {
+            return snapshot.docs[0].ref;
+        }
+    }
 
     // --- LÓGICA DE IA (GEMINI) ---
     async function generateReminder(librador, monto, fechaCobro) {
@@ -70,50 +80,31 @@ authReady.then(() => {
         const reason = depositForm.querySelector('input[name="deposit_reason"]:checked').value;
 
         try {
+            const carteraDocRef = await getOrCreateMainItemRef("Cheques en cartera", "activo");
+            const pendientesDocRef = await getOrCreateMainItemRef("Cheques pendiente de cobro", "activo");
+            const bancosDocRef = await getOrCreateMainItemRef("Saldo Bancario", "activo");
+            
             await runTransaction(db, async (transaction) => {
-                const itemsRef = collection(db, 'items');
-                
-                const carteraQuery = query(itemsRef, where("nombre", "==", "Cheques en cartera"));
-                const carteraSnap = await getDocs(carteraQuery);
-                if (carteraSnap.empty) throw new Error("Categoría 'Cheques en cartera' no encontrada.");
-                const carteraDocRef = carteraSnap.docs[0].ref;
-                const sourceChequeRef = doc(db, carteraDocRef.path, "cheques_detalle_cartera", chequeId);
-
+                const sourceChequeRef = doc(db, carteraDocRef.path, SUBCOLLECTION_NAME, chequeId);
                 const carteraDoc = await transaction.get(carteraDocRef);
+                const pendientesDoc = await transaction.get(pendientesDocRef);
+                const bancosDoc = await transaction.get(bancosDocRef);
+
+                if (!carteraDoc.exists()) throw new Error("Categoría 'Cheques en cartera' no encontrada.");
+
                 const newCarteraTotal = (carteraDoc.data().valor || 0) - chequeData.monto;
-                
                 transaction.update(carteraDocRef, { valor: newCarteraTotal });
                 transaction.delete(sourceChequeRef);
 
                 if (reason === 'cobrar') {
-                    const pendientesQuery = query(itemsRef, where("nombre", "==", "Cheques pendiente de cobro"));
-                    let pendientesSnap = await getDocs(pendientesQuery);
-                    let pendientesDocRef;
-                    if (pendientesSnap.empty) {
-                        const newDoc = await addDoc(itemsRef, { nombre: "Cheques pendiente de cobro", valor: 0, tipo: "activo" });
-                        pendientesDocRef = doc(db, 'items', newDoc.id);
-                    } else {
-                        pendientesDocRef = pendientesSnap.docs[0].ref;
-                    }
-                    const pendientesDoc = await transaction.get(pendientesDocRef);
                     const newPendientesTotal = (pendientesDoc.data()?.valor || 0) + chequeData.monto;
                     const newChequeData = { ...chequeData, estado: "Depositado" };
+                    const targetChequeRef = doc(collection(pendientesDocRef, "cheques_detalle_pendientes"));
                     transaction.update(pendientesDocRef, { valor: newPendientesTotal });
-                    transaction.set(doc(collection(pendientesDocRef, "cheques_detalle_pendientes")), newChequeData);
+                    transaction.set(targetChequeRef, newChequeData);
                 } else if (reason === 'venta') {
                     const montoAcreditar = parseFloat(document.getElementById('venta-monto-acreditar').value);
                     const gastosVenta = chequeData.monto - montoAcreditar;
-
-                    const bancosQuery = query(itemsRef, where("nombre", "==", "Saldo Bancario"));
-                    let bancosSnap = await getDocs(bancosQuery);
-                    let bancosDocRef;
-                    if (bancosSnap.empty) {
-                        const newDoc = await addDoc(itemsRef, { nombre: "Saldo Bancario", valor: 0, tipo: "activo" });
-                        bancosDocRef = doc(db, 'items', newDoc.id);
-                    } else {
-                        bancosDocRef = bancosSnap.docs[0].ref;
-                    }
-                    const bancosDoc = await transaction.get(bancosDocRef);
                     const newBancoTotal = (bancosDoc.data()?.valor || 0) + montoAcreditar - gastosVenta;
                     transaction.update(bancosDocRef, { valor: newBancoTotal });
                     
@@ -179,7 +170,7 @@ authReady.then(() => {
             const data = doc.data();
             const card = document.createElement('div');
             card.className = 'detail-card';
-            const statusClass = { 'En cartera': 'status-en-cartera', 'Depositado': 'status-depositado' }[data.estado] || 'status-en-cartera';
+            const statusClass = { 'En cartera': 'status-en-cartera' }[data.estado] || 'status-en-cartera';
             card.innerHTML = `
                 <div class="card-header"><h3 class="card-title">${data.librador}</h3><span class="status-badge ${statusClass}">${data.estado}</span></div>
                 <div class="card-body">
