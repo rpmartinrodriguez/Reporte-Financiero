@@ -346,3 +346,9 @@ body {
 
 .negative-balance { background-color: #FEF2F2; /* red-50 */ }
 .negative-balance .day-balance { color: #B91C1C; /* red-700 */ }
+
+/* --- NUEVOS ESTILOS PARA LOS CONTENEDORES DE GRÁFICOS --- */
+.chart-container {
+    position: relative;
+    height: 300px; /* Altura fija para los contenedores de gráficos */
+}
