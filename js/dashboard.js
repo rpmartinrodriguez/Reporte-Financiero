@@ -1,5 +1,5 @@
 import { db, authReady } from './firebase-config.js';
-import { collection, onSnapshot, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, onSnapshot, getDocs, doc, getDoc } from "https://www.gstatic.comcom/firebasejs/11.6.1/firebase-firestore.js";
 
 authReady.then(() => {
     // --- ELEMENTOS DEL DOM ---
@@ -100,13 +100,16 @@ authReady.then(() => {
         const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const activosData = [];
         itemsData.forEach(item => {
+            // CAMBIO CLAVE: Asegurarnos de que el valor a mostrar y sumar para los activos no sea negativo.
+            const displayValue = item.tipo === 'activo' ? Math.max(0, item.valor) : item.valor;
+
             if (item.tipo === 'activo') {
-                totalActivos += item.valor;
-                activosListEl.appendChild(createDetailCard(item));
-                if (item.valor > 0) activosData.push({ label: item.nombre, value: item.valor });
+                totalActivos += displayValue;
+                activosListEl.appendChild(createDetailCard(item, displayValue));
+                if (displayValue > 0) activosData.push({ label: item.nombre, value: displayValue });
             } else if (item.tipo === 'pasivo') {
-                totalPasivos += item.valor;
-                pasivosListEl.appendChild(createDetailCard(item));
+                totalPasivos += displayValue;
+                pasivosListEl.appendChild(createDetailCard(item, displayValue));
             }
         });
         totalActivosEl.textContent = formatCurrency(totalActivos);
@@ -120,12 +123,12 @@ authReady.then(() => {
     });
 
     // --- FUNCIONES AUXILIARES COMPLETAS ---
-    function createDetailCard(item) {
+    function createDetailCard(item, displayValue) {
         const href = pageMapping[item.nombre] || '#';
         const card = document.createElement('a');
         card.href = href;
         card.className = 'detail-card-link';
-        card.innerHTML = `<div class="flex justify-between items-center"><span class="text-lg font-medium text-gray-800">${item.nombre}</span><div class="flex items-center space-x-2"><span class="text-xl font-semibold text-gray-900">${formatCurrency(item.valor)}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg></div></div>`;
+        card.innerHTML = `<div class="flex justify-between items-center"><span class="text-lg font-medium text-gray-800">${item.nombre}</span><div class="flex items-center space-x-2"><span class="text-xl font-semibold text-gray-900">${formatCurrency(displayValue)}</span><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg></div></div>`;
         return card;
     }
 
