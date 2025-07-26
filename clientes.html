@@ -80,6 +80,17 @@
             </section>
         </div>
 
+<!-- NUEVA BARRA DE BÚSQUEDA Y FILTROS -->
+        <div class="filter-bar">
+            <input type="text" id="search-input" class="search-input" placeholder="Buscar por cliente, factura...">
+            <select id="status-filter" class="filter-select">
+                <option value="todos">Todos los estados</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Cobrado">Cobrado</option>
+                <option value="Vencido">Vencido</option>
+            </select>
+        </div>
+        
         <div id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
             <p>Cargando facturas existentes...</p>
         </div>
