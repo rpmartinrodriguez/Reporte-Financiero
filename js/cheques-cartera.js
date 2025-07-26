@@ -68,7 +68,7 @@ authReady.then(() => {
                 let pendientesDocRef;
                 if (pendientesSnap.empty) {
                     const newPendientesDoc = await addDoc(itemsRef, { nombre: "Cheques pendiente de cobro", valor: 0, tipo: "activo" });
-                    pendientesDocRef = doc(db, 'items', newPendientesDoc.id); // Corregido para obtener la referencia correcta
+                    pendientesDocRef = doc(db, 'items', newPendientesDoc.id);
                 } else {
                     pendientesDocRef = pendientesSnap.docs[0].ref;
                 }
@@ -77,7 +77,7 @@ authReady.then(() => {
                 const pendientesDoc = await transaction.get(pendientesDocRef);
                 const monto = chequeData.monto;
                 const newCarteraTotal = (carteraDoc.data().valor || 0) - monto;
-                const newPendientesTotal = (pendientesDoc.data()?.valor || 0) + monto; // Usar optional chaining por si es un doc nuevo
+                const newPendientesTotal = (pendientesDoc.data()?.valor || 0) + monto;
                 const newChequeData = { ...chequeData, estado: "Depositado" };
                 transaction.update(carteraDocRef, { valor: newCarteraTotal });
                 transaction.update(pendientesDocRef, { valor: newPendientesTotal });
