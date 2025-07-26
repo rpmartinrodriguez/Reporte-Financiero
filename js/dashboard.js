@@ -2,10 +2,12 @@ import { db, authReady } from './firebase-config.js';
 import { collection, onSnapshot, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 authReady.then(() => {
+    // --- ELEMENTOS DEL DOM ---
     const totalActivosEl = document.getElementById('total-activos');
     const totalPasivosEl = document.getElementById('total-pasivos');
     const activosListEl = document.getElementById('activos-list');
     const pasivosListEl = document.getElementById('pasivos-list');
+    const notificationsListEl = document.getElementById('notifications-list');
     const calendarGrid = document.getElementById('calendar-grid');
     const monthYearDisplay = document.getElementById('month-year');
     const prevMonthBtn = document.getElementById('prev-month');
@@ -19,6 +21,105 @@ authReady.then(() => {
     const calendarFormat = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
     const pageMapping = { "Saldo Bancario": "bancos.html", "Clientes a Cobrar": "clientes.html", "Cheques en cartera": "cheques-cartera.html", "Cheques pendiente de cobro": "cheques-pendientes.html", "Proveedores a pagar": "proveedores.html", "Cheques a pagar": "cheques-pagar.html" };
     
+    // --- LÓGICA DE NOTIFICACIONES ---
+    async function renderNotifications() {
+        if (!notificationsListEl) return;
+        notificationsListEl.innerHTML = '<p class="text-gray-500">Buscando vencimientos...</p>';
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const sevenDaysFromNow = new Date(today);
+        sevenDaysFromNow.setDate(today.getDate() + 7);
+
+        const itemsSnapshot = await getDocs(collection(db, 'items'));
+        const allNotifications = [];
+        const notificationConfigs = [
+            { name: "Clientes a Cobrar", sub: "facturas", dateField: "fecha_vencimiento", descField: "nombre", amountField: "saldo_neto", type: "cobro" },
+            { name: "Cheques en cartera", sub: "cheques_detalle_cartera", dateField: "fecha_cobro", descField: "librador", amountField: "monto", type: "deposito" },
+            { name: "Proveedores a pagar", sub: "facturas_proveedores", dateField: "fecha_vencimiento", descField: "proveedor", amountField: "saldo", type: "pago" }
+        ];
+
+        for (const config of notificationConfigs) {
+            const parentDoc = itemsSnapshot.docs.find(doc => doc.data().nombre === config.name);
+            if (parentDoc) {
+                const subSnapshot = await getDocs(collection(db, 'items', parentDoc.id, config.sub));
+                subSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.estado === "Pendiente" || data.estado === "En cartera") {
+                        const eventDate = new Date(data[config.dateField] + 'T00:00:00');
+                        if (eventDate <= sevenDaysFromNow) {
+                            allNotifications.push({ ...data, type: config.type, date: eventDate, desc: data[config.descField], amount: data[config.amountField] });
+                        }
+                    }
+                });
+            }
+        }
+
+        allNotifications.sort((a, b) => a.date - b.date);
+
+        if (allNotifications.length === 0) {
+            notificationsListEl.innerHTML = '<p class="text-gray-500">No hay vencimientos próximos en los siguientes 7 días.</p>';
+            return;
+        }
+
+        notificationsListEl.innerHTML = '';
+        allNotifications.forEach(item => {
+            const isOverdue = item.date < today;
+            const iconClass = item.type === 'pago' ? 'overdue' : (isOverdue ? 'overdue' : (item.type === 'deposito' ? 'deposit' : 'upcoming'));
+            const iconSVG = {
+                pago: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>',
+                cobro: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01"></path></svg>',
+                deposito: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>'
+            }[item.type];
+
+            const text = {
+                pago: `Pagar factura a <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`,
+                cobro: `Cobrar factura a <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`,
+                deposito: `Depositar cheque de <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`
+            }[item.type];
+            
+            const dateText = isOverdue ? `Venció el ${item.date.toLocaleDateString('es-ES')}` : `Vence el ${item.date.toLocaleDateString('es-ES')}`;
+
+            const notificationEl = document.createElement('div');
+            notificationEl.className = 'notification-item';
+            notificationEl.innerHTML = `
+                <div class="notification-icon ${iconClass}">${iconSVG}</div>
+                <div class="notification-content">
+                    <p class="notification-text">${text}</p>
+                    <p class="notification-date">${dateText}</p>
+                </div>
+            `;
+            notificationsListEl.appendChild(notificationEl);
+        });
+    }
+
+    // --- LÓGICA PRINCIPAL DEL DASHBOARD ---
+    onSnapshot(collection(db, 'items'), (snapshot) => {
+        let totalActivos = 0, totalPasivos = 0;
+        activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
+        const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const activosData = [];
+        itemsData.forEach(item => {
+            if (item.tipo === 'activo') {
+                totalActivos += item.valor;
+                activosListEl.appendChild(createDetailCard(item));
+                if (item.valor > 0) activosData.push({ label: item.nombre, value: item.valor });
+            } else if (item.tipo === 'pasivo') {
+                totalPasivos += item.valor;
+                pasivosListEl.appendChild(createDetailCard(item));
+            }
+        });
+        totalActivosEl.textContent = formatCurrency(totalActivos);
+        totalPasivosEl.textContent = formatCurrency(totalPasivos);
+        updateTotalsChart(totalActivos, totalPasivos);
+        updateAssetCompositionChart(activosData);
+        if (activosListEl.innerHTML === '') activosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de activo.</p>';
+        if (pasivosListEl.innerHTML === '') pasivosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de pasivo.</p>';
+        
+        renderNotifications();
+    });
+
+    // --- FUNCIONES AUXILIARES COMPLETAS ---
     function createDetailCard(item) {
         const href = pageMapping[item.nombre] || '#';
         const card = document.createElement('a');
@@ -53,29 +154,6 @@ authReady.then(() => {
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
     }
-
-    onSnapshot(collection(db, 'items'), (snapshot) => {
-        let totalActivos = 0, totalPasivos = 0;
-        activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
-        const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const activosData = [];
-        itemsData.forEach(item => {
-            if (item.tipo === 'activo') {
-                totalActivos += item.valor;
-                activosListEl.appendChild(createDetailCard(item));
-                if (item.valor > 0) activosData.push({ label: item.nombre, value: item.valor });
-            } else if (item.tipo === 'pasivo') {
-                totalPasivos += item.valor;
-                pasivosListEl.appendChild(createDetailCard(item));
-            }
-        });
-        totalActivosEl.textContent = formatCurrency(totalActivos);
-        totalPasivosEl.textContent = formatCurrency(totalPasivos);
-        updateTotalsChart(totalActivos, totalPasivos);
-        updateAssetCompositionChart(activosData);
-        if (activosListEl.innerHTML === '') activosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de activo.</p>';
-        if (pasivosListEl.innerHTML === '') pasivosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de pasivo.</p>';
-    });
 
     async function renderCalendarWidget() {
         if (!calendarGrid) return;
@@ -120,9 +198,11 @@ authReady.then(() => {
             calendarGrid.innerHTML += dayHtml;
         }
     }
+    
     if (prevMonthBtn && nextMonthBtn) {
         prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendarWidget(); });
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendarWidget(); });
     }
+
     renderCalendarWidget();
 });
