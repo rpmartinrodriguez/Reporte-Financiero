@@ -2,23 +2,42 @@ import { db, authReady } from './firebase-config.js';
 import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 authReady.then(() => {
+    // --- CONFIGURACIÓN Y CONSTANTES ---
     const ITEM_NAME = "Cheques en cartera";
     const SUBCOLLECTION_NAME = "cheques_detalle_cartera";
     const ITEM_TYPE = "activo";
 
+    // --- ELEMENTOS DEL DOM ---
     const detailTableContainer = document.getElementById('detail-table-container');
     const dataForm = document.getElementById('data-form');
-    const modal = document.getElementById('reminder-modal');
+    const searchInput = document.getElementById('search-input');
+    const statusFilter = document.getElementById('status-filter');
+    const paginationContainer = document.getElementById('pagination-container');
+    // Modal de IA
+    const reminderModal = document.getElementById('reminder-modal');
     const closeModalButton = document.getElementById('close-modal-button');
     const reminderText = document.getElementById('reminder-text');
     const copyButton = document.getElementById('copy-button');
     const loadingAI = document.getElementById('loading-ai');
+    // Modal de Depósito
+    const depositModal = document.getElementById('deposit-modal');
+    const closeDepositModalButton = document.getElementById('close-deposit-modal');
+    const depositForm = document.getElementById('deposit-form');
+    const ventaChequeFields = document.getElementById('venta-cheque-fields');
+    const confirmDepositBtn = document.getElementById('confirm-deposit-btn');
+    
+    // --- ESTADO GLOBAL DE LA PÁGINA ---
+    let allDocs = [];
+    let currentPage = 1;
+    const ITEMS_PER_PAGE = 5;
 
+    // --- FUNCIONES AUXILIARES ---
     const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 
+    // --- LÓGICA DE IA (GEMINI) ---
     async function generateReminder(librador, monto, fechaCobro) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        reminderModal.classList.remove('hidden');
+        reminderModal.classList.add('flex');
         loadingAI.classList.remove('hidden');
         reminderText.classList.add('hidden');
         copyButton.classList.add('hidden');
@@ -43,65 +62,120 @@ authReady.then(() => {
         }
     }
 
-    async function depositCheque(chequeId, chequeData) {
-        if (!confirm(`¿Estás seguro de que quieres mover este cheque a "Pendiente de cobro"?`)) return;
+    // --- LÓGICA DE NEGOCIO (FLUJOS DE TRABAJO) ---
+    async function processDeposit(e) {
+        e.preventDefault();
+        const chequeId = document.getElementById('deposit-cheque-id').value;
+        const chequeData = JSON.parse(document.getElementById('deposit-cheque-data').value);
+        const reason = depositForm.querySelector('input[name="deposit_reason"]:checked').value;
 
         try {
             await runTransaction(db, async (transaction) => {
                 const itemsRef = collection(db, 'items');
                 
-                // 1. Referencias y documentos de origen
                 const carteraQuery = query(itemsRef, where("nombre", "==", "Cheques en cartera"));
                 const carteraSnap = await getDocs(carteraQuery);
-                if (carteraSnap.empty) throw new Error("No se encontró la categoría 'Cheques en cartera'");
+                if (carteraSnap.empty) throw new Error("Categoría 'Cheques en cartera' no encontrada.");
                 const carteraDocRef = carteraSnap.docs[0].ref;
-                const sourceChequeRef = doc(db, carteraDocRef.path, SUBCOLLECTION_NAME, chequeId);
+                const sourceChequeRef = doc(db, carteraDocRef.path, "cheques_detalle_cartera", chequeId);
 
-                // 2. Referencias y documentos de destino
-                const pendientesQuery = query(itemsRef, where("nombre", "==", "Cheques pendiente de cobro"));
-                let pendientesSnap = await getDocs(pendientesQuery);
-                let pendientesDocRef;
-                if (pendientesSnap.empty) {
-                    const newPendientesDoc = await addDoc(itemsRef, { nombre: "Cheques pendiente de cobro", valor: 0, tipo: "activo" });
-                    pendientesDocRef = newPendientesDoc.ref;
-                } else {
-                    pendientesDocRef = pendientesSnap.docs[0].ref;
-                }
-                const targetChequeRef = doc(collection(pendientesDocRef, "cheques_detalle_pendientes"));
-
-                // 3. Leer los totales actuales
                 const carteraDoc = await transaction.get(carteraDocRef);
-                const pendientesDoc = await transaction.get(pendientesDocRef);
+                const newCarteraTotal = (carteraDoc.data().valor || 0) - chequeData.monto;
                 
-                // 4. Calcular nuevos totales
-                const monto = chequeData.monto;
-                const newCarteraTotal = (carteraDoc.data().valor || 0) - monto;
-                const newPendientesTotal = (pendientesDoc.data().valor || 0) + monto;
-
-                // 5. Preparar los datos del nuevo cheque
-                const newChequeData = { ...chequeData, estado: "Depositado" };
-                
-                // 6. Ejecutar las escrituras
                 transaction.update(carteraDocRef, { valor: newCarteraTotal });
-                transaction.update(pendientesDocRef, { valor: newPendientesTotal });
                 transaction.delete(sourceChequeRef);
-                transaction.set(targetChequeRef, newChequeData);
+
+                if (reason === 'cobrar') {
+                    const pendientesQuery = query(itemsRef, where("nombre", "==", "Cheques pendiente de cobro"));
+                    let pendientesSnap = await getDocs(pendientesQuery);
+                    let pendientesDocRef;
+                    if (pendientesSnap.empty) {
+                        const newDoc = await addDoc(itemsRef, { nombre: "Cheques pendiente de cobro", valor: 0, tipo: "activo" });
+                        pendientesDocRef = doc(db, 'items', newDoc.id);
+                    } else {
+                        pendientesDocRef = pendientesSnap.docs[0].ref;
+                    }
+                    const pendientesDoc = await transaction.get(pendientesDocRef);
+                    const newPendientesTotal = (pendientesDoc.data()?.valor || 0) + chequeData.monto;
+                    const newChequeData = { ...chequeData, estado: "Depositado" };
+                    transaction.update(pendientesDocRef, { valor: newPendientesTotal });
+                    transaction.set(doc(collection(pendientesDocRef, "cheques_detalle_pendientes")), newChequeData);
+                } else if (reason === 'venta') {
+                    const montoAcreditar = parseFloat(document.getElementById('venta-monto-acreditar').value);
+                    const gastosVenta = chequeData.monto - montoAcreditar;
+
+                    const bancosQuery = query(itemsRef, where("nombre", "==", "Saldo Bancario"));
+                    let bancosSnap = await getDocs(bancosQuery);
+                    let bancosDocRef;
+                    if (bancosSnap.empty) {
+                        const newDoc = await addDoc(itemsRef, { nombre: "Saldo Bancario", valor: 0, tipo: "activo" });
+                        bancosDocRef = doc(db, 'items', newDoc.id);
+                    } else {
+                        bancosDocRef = bancosSnap.docs[0].ref;
+                    }
+                    const bancosDoc = await transaction.get(bancosDocRef);
+                    const newBancoTotal = (bancosDoc.data()?.valor || 0) + montoAcreditar - gastosVenta;
+                    transaction.update(bancosDocRef, { valor: newBancoTotal });
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    const ingresoData = { fecha: today, descripcion: `Venta cheque N°${chequeData.numero_cheque}`, monto: montoAcreditar };
+                    const gastoData = { fecha: today, descripcion: `Gastos venta cheque N°${chequeData.numero_cheque}`, monto: -gastosVenta };
+                    
+                    transaction.set(doc(collection(bancosDocRef, "movimientos_bancarios")), ingresoData);
+                    transaction.set(doc(collection(bancosDocRef, "movimientos_bancarios")), gastoData);
+                }
             });
-            alert("¡Cheque movido a 'Pendiente de cobro' con éxito!");
+            alert("¡Operación completada con éxito!");
+            depositModal.classList.add('hidden');
         } catch (error) {
-            console.error("Error al depositar el cheque:", error);
+            console.error("Error en la transacción:", error);
             alert("Hubo un error al procesar la operación.");
         }
     }
 
+    // --- LÓGICA DE RENDERIZADO Y FILTROS ---
+    function applyFiltersAndPagination() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const filteredDocs = allDocs.filter(doc => {
+            const data = doc.data();
+            const matchesSearch = searchTerm === '' || Object.values(data).some(value => String(value).toLowerCase().includes(searchTerm));
+            const matchesStatus = status === 'todos' || data.estado === status;
+            return matchesSearch && matchesStatus;
+        });
+        renderDetails(filteredDocs);
+    }
+
+    function renderPagination(totalItems) {
+        paginationContainer.innerHTML = '';
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+        if (totalPages <= 1) return;
+        const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+        const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
+        paginationContainer.innerHTML = `
+            <div class="pagination-info">Mostrando ${startItem}-${endItem} de ${totalItems}</div>
+            <div class="pagination-buttons">
+                <button id="prev-page" class="pagination-button" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                <button id="next-page" class="pagination-button" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
+            </div>
+        `;
+        document.getElementById('prev-page')?.addEventListener('click', () => { if (currentPage > 1) { currentPage--; applyFiltersAndPagination(); } });
+        document.getElementById('next-page')?.addEventListener('click', () => { if (currentPage < totalPages) { currentPage++; applyFiltersAndPagination(); } });
+    }
+
     function renderDetails(docs) {
-        if (docs.length === 0) {
-            detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No hay cheques en cartera.</p>';
+        renderPagination(docs.length);
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const pageDocs = docs.slice(startIndex, endIndex);
+
+        if (pageDocs.length === 0) {
+            detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No se encontraron resultados.</p>';
             return;
         }
         detailTableContainer.innerHTML = '<div class="details-grid"></div>';
         const grid = detailTableContainer.querySelector('.details-grid');
-        docs.forEach(doc => {
+        pageDocs.forEach(doc => {
             const data = doc.data();
             const card = document.createElement('div');
             card.className = 'detail-card';
@@ -134,12 +208,26 @@ authReady.then(() => {
             button.addEventListener('click', (e) => {
                 const chequeId = e.currentTarget.dataset.id;
                 const chequeData = JSON.parse(e.currentTarget.dataset.cheque);
-                depositCheque(chequeId, chequeData);
+                document.getElementById('deposit-cheque-id').value = chequeId;
+                document.getElementById('deposit-cheque-data').value = JSON.stringify(chequeData);
+                document.getElementById('deposit-librador').textContent = chequeData.librador;
+                document.getElementById('deposit-monto').textContent = formatCurrency(chequeData.monto);
+                const montoAcreditarInput = document.getElementById('venta-monto-acreditar');
+                montoAcreditarInput.value = chequeData.monto.toFixed(2);
+                document.getElementById('venta-gastos').value = '0.00';
+                montoAcreditarInput.oninput = () => {
+                    const gastos = chequeData.monto - (parseFloat(montoAcreditarInput.value) || 0);
+                    document.getElementById('venta-gastos').value = gastos.toFixed(2);
+                };
+                depositModal.classList.remove('hidden');
+                depositModal.classList.add('flex');
             });
         });
     }
 
     async function initializePage() {
+        searchInput.addEventListener('input', () => { currentPage = 1; applyFiltersAndPagination(); });
+        statusFilter.addEventListener('change', () => { currentPage = 1; applyFiltersAndPagination(); });
         const itemsRef = collection(db, 'items');
         let mainDocRef;
         const q = query(itemsRef, where("nombre", "==", ITEM_NAME));
@@ -151,7 +239,10 @@ authReady.then(() => {
             mainDocRef = querySnapshot.docs[0].ref;
         }
         const subcollectionRef = collection(mainDocRef, SUBCOLLECTION_NAME);
-        onSnapshot(subcollectionRef, (snapshot) => renderDetails(snapshot.docs));
+        onSnapshot(subcollectionRef, (snapshot) => {
+            allDocs = snapshot.docs.sort((a, b) => new Date(b.data().fecha_cobro) - new Date(a.data().fecha_cobro));
+            applyFiltersAndPagination();
+        });
         dataForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(dataForm);
@@ -171,12 +262,21 @@ authReady.then(() => {
         });
     }
 
-    closeModalButton.addEventListener('click', () => modal.classList.add('hidden'));
+    closeModalButton.addEventListener('click', () => reminderModal.classList.add('hidden'));
     copyButton.addEventListener('click', () => {
         reminderText.select();
         document.execCommand('copy');
         copyButton.textContent = '¡Copiado!';
         setTimeout(() => { copyButton.textContent = 'Copiar Texto'; }, 2000);
+    });
+    closeDepositModalButton.addEventListener('click', () => depositModal.classList.add('hidden'));
+    depositForm.addEventListener('submit', processDeposit);
+    depositForm.querySelectorAll('input[name="deposit_reason"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const isVenta = e.target.value === 'venta';
+            ventaChequeFields.classList.toggle('hidden', !isVenta);
+            confirmDepositBtn.textContent = isVenta ? 'Confirmar Venta' : 'Confirmar Depósito';
+        });
     });
 
     initializePage();
