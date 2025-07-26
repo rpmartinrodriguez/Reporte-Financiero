@@ -112,7 +112,7 @@ body {
 }
 
 .detail-card {
-    background-color: #fbf7f7; /* Tu última actualización de color */
+    background-color: #fbf7f7;
     border-radius: 0.75rem;
     border: 1px solid #E5E7EB;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
@@ -241,3 +241,5 @@ body {
 .action-button.primary:hover { background-color: #c7d2fe; }
 .action-button.secondary { background-color: #e0e7ff; color: #3730a3; }
 .action-button.secondary:hover { background-color: #c7d2fe; }
+.action-button.success { background-color: #D1FAE5; color: #065F46; } /* Nuevo estilo */
+.action-button.success:hover { background-color: #A7F3D0; } /* Nuevo estilo */
