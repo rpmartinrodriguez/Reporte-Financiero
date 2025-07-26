@@ -6,10 +6,11 @@
     <title>Panel de Control Financiero</title>
     <link rel="stylesheet" href="./style.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería para los gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- BARRA DE NAVEGACIÓN -->
     <nav class="bg-white shadow-md sticky top-0 z-20">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -65,6 +66,17 @@
             <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-8 rounded-2xl shadow-lg"><h2 class="text-xl font-semibold opacity-80">Total Pasivos</h2><p id="total-pasivos" class="text-5xl font-bold mt-2">Cargando...</p></div>
         </section>
 
+        <section class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-12">
+            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Composición de Activos</h3>
+                <div class="chart-container"><canvas id="asset-composition-chart"></canvas></div>
+            </div>
+            <div class="lg:col-span-3 bg-white rounded-xl shadow-md p-6">
+                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Resumen General</h3>
+                <div class="chart-container"><canvas id="totals-chart"></canvas></div>
+            </div>
+        </section>
+
         <section class="mb-12">
             <div class="bg-white rounded-xl shadow-md p-4 md:p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -87,7 +99,5 @@
 
     <script type="module" src="./js/main.js"></script>
     <script type="module" src="./js/dashboard.js"></script>
-    <!-- LA SIGUIENTE LÍNEA HA SIDO ELIMINADA -->
-    <!-- <script type="module" src="./js/calendario.js"></script> -->
 </body>
 </html>
