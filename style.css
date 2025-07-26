@@ -352,3 +352,47 @@ body {
     position: relative;
     height: 300px; /* Altura fija para los contenedores de gráficos */
 }
+
+/* NUEVOS ESTILOS PARA NOTIFICACIONES */
+.notification-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    transition: background-color 0.2s;
+}
+.notification-item:hover {
+    background-color: #F9FAFB;
+}
+.notification-icon {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+.notification-icon.overdue { background-color: #FEE2E2; color: #B91C1C; } /* Rojo para vencidos */
+.notification-icon.upcoming { background-color: #FEF3C7; color: #92400E; } /* Amarillo para próximos */
+.notification-icon.deposit { background-color: #DBEAFE; color: #1E40AF; } /* Azul para depósitos */
+.notification-content {
+    flex-grow: 1;
+}
+.notification-text {
+    font-size: 0.875rem;
+    color: #374151;
+}
+.notification-text strong {
+    font-weight: 600;
+    color: #111827;
+}
+.notification-date {
+    font-size: 0.75rem;
+    color: #6B7280;
+}
+
+
