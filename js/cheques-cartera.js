@@ -2,29 +2,20 @@ import { db, authReady } from './firebase-config.js';
 import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 authReady.then(() => {
-    // --- CONFIGURACIÓN Y CONSTANTES ---
     const ITEM_NAME = "Cheques en cartera";
     const SUBCOLLECTION_NAME = "cheques_detalle_cartera";
     const ITEM_TYPE = "activo";
 
-    // --- ELEMENTOS DEL DOM ---
     const detailTableContainer = document.getElementById('detail-table-container');
     const dataForm = document.getElementById('data-form');
-    const searchInput = document.getElementById('search-input');
-    const statusFilter = document.getElementById('status-filter');
     const modal = document.getElementById('reminder-modal');
     const closeModalButton = document.getElementById('close-modal-button');
     const reminderText = document.getElementById('reminder-text');
     const copyButton = document.getElementById('copy-button');
     const loadingAI = document.getElementById('loading-ai');
 
-    // --- ESTADO GLOBAL DE LA PÁGINA ---
-    let allDocs = []; // Almacenamos todos los documentos aquí para filtrar
-
-    // --- FUNCIONES AUXILIARES ---
     const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
 
-    // --- LÓGICA DE IA (GEMINI) ---
     async function generateReminder(librador, monto, fechaCobro) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -52,33 +43,45 @@ authReady.then(() => {
         }
     }
 
-    // --- LÓGICA DE NEGOCIO (FLUJOS DE TRABAJO) ---
     async function depositCheque(chequeId, chequeData) {
         if (!confirm(`¿Estás seguro de que quieres mover este cheque a "Pendiente de cobro"?`)) return;
+
         try {
             await runTransaction(db, async (transaction) => {
                 const itemsRef = collection(db, 'items');
+                
+                // 1. Referencias y documentos de origen
                 const carteraQuery = query(itemsRef, where("nombre", "==", "Cheques en cartera"));
                 const carteraSnap = await getDocs(carteraQuery);
                 if (carteraSnap.empty) throw new Error("No se encontró la categoría 'Cheques en cartera'");
                 const carteraDocRef = carteraSnap.docs[0].ref;
                 const sourceChequeRef = doc(db, carteraDocRef.path, SUBCOLLECTION_NAME, chequeId);
+
+                // 2. Referencias y documentos de destino
                 const pendientesQuery = query(itemsRef, where("nombre", "==", "Cheques pendiente de cobro"));
                 let pendientesSnap = await getDocs(pendientesQuery);
                 let pendientesDocRef;
                 if (pendientesSnap.empty) {
                     const newPendientesDoc = await addDoc(itemsRef, { nombre: "Cheques pendiente de cobro", valor: 0, tipo: "activo" });
-                    pendientesDocRef = doc(db, 'items', newPendientesDoc.id);
+                    pendientesDocRef = newPendientesDoc.ref;
                 } else {
                     pendientesDocRef = pendientesSnap.docs[0].ref;
                 }
                 const targetChequeRef = doc(collection(pendientesDocRef, "cheques_detalle_pendientes"));
+
+                // 3. Leer los totales actuales
                 const carteraDoc = await transaction.get(carteraDocRef);
                 const pendientesDoc = await transaction.get(pendientesDocRef);
+                
+                // 4. Calcular nuevos totales
                 const monto = chequeData.monto;
                 const newCarteraTotal = (carteraDoc.data().valor || 0) - monto;
-                const newPendientesTotal = (pendientesDoc.data()?.valor || 0) + monto;
+                const newPendientesTotal = (pendientesDoc.data().valor || 0) + monto;
+
+                // 5. Preparar los datos del nuevo cheque
                 const newChequeData = { ...chequeData, estado: "Depositado" };
+                
+                // 6. Ejecutar las escrituras
                 transaction.update(carteraDocRef, { valor: newCarteraTotal });
                 transaction.update(pendientesDocRef, { valor: newPendientesTotal });
                 transaction.delete(sourceChequeRef);
@@ -91,25 +94,9 @@ authReady.then(() => {
         }
     }
 
-    // --- LÓGICA DE RENDERIZADO Y FILTROS ---
-    function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const status = statusFilter.value;
-        const filteredDocs = allDocs.filter(doc => {
-            const data = doc.data();
-            const matchesSearch = searchTerm === '' || 
-                Object.values(data).some(value => 
-                    String(value).toLowerCase().includes(searchTerm)
-                );
-            const matchesStatus = status === 'todos' || data.estado === status;
-            return matchesSearch && matchesStatus;
-        });
-        renderDetails(filteredDocs);
-    }
-
     function renderDetails(docs) {
         if (docs.length === 0) {
-            detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No se encontraron resultados.</p>';
+            detailTableContainer.innerHTML = '<p class="text-center text-gray-500">No hay cheques en cartera.</p>';
             return;
         }
         detailTableContainer.innerHTML = '<div class="details-grid"></div>';
@@ -152,11 +139,7 @@ authReady.then(() => {
         });
     }
 
-    // --- FUNCIÓN PRINCIPAL DE INICIALIZACIÓN ---
     async function initializePage() {
-        searchInput.addEventListener('input', applyFilters);
-        statusFilter.addEventListener('change', applyFilters);
-
         const itemsRef = collection(db, 'items');
         let mainDocRef;
         const q = query(itemsRef, where("nombre", "==", ITEM_NAME));
@@ -168,10 +151,7 @@ authReady.then(() => {
             mainDocRef = querySnapshot.docs[0].ref;
         }
         const subcollectionRef = collection(mainDocRef, SUBCOLLECTION_NAME);
-        onSnapshot(subcollectionRef, (snapshot) => {
-            allDocs = snapshot.docs;
-            applyFilters();
-        });
+        onSnapshot(subcollectionRef, (snapshot) => renderDetails(snapshot.docs));
         dataForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(dataForm);
