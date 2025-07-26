@@ -60,7 +60,6 @@
     
     <main class="container mx-auto p-4 md:p-8">
         <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Gestión de Clientes por Cobrar</h1>
-
         <div class="mb-10 bg-white rounded-xl shadow-md">
             <button id="toggle-form-button" class="w-full flex justify-between items-center p-6 text-left">
                 <h2 class="text-2xl font-bold text-gray-800">Cargar Nueva Factura</h2>
@@ -82,7 +81,6 @@
                 </form>
             </section>
         </div>
-
         <div class="filter-bar">
             <input type="text" id="search-input" class="search-input" placeholder="Buscar por cliente, factura...">
             <select id="status-filter" class="filter-select">
@@ -92,42 +90,46 @@
                 <option value="Vencido">Vencido</option>
             </select>
         </div>
-
-        <div id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
-            <p>Cargando facturas existentes...</p>
-        </div>
+        <div id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md"><p>Cargando facturas existentes...</p></div>
         <div id="pagination-container" class="pagination-container"></div>
     </main>
 
-    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 md:w-1/2 lg:w-1/3">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-gray-800">Registrar Cobro de Factura</h3>
-                <button id="close-payment-modal" class="text-gray-500 hover:text-gray-800">&times;</button>
-            </div>
-            <form id="payment-form">
-                <input type="hidden" id="invoice-id">
-                <input type="hidden" id="invoice-amount">
-                <input type="hidden" id="invoice-client">
-                <div class="space-y-4">
-                    <div>
-                        <label for="metodo_pago" class="form-label">Método de Cobro</label>
-                        <select id="metodo_pago" name="metodo_pago" class="form-input">
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
-                    </div>
-                    <div id="cheque-fields" class="hidden space-y-4 border-t pt-4">
-                        <div><label for="cheque-numero" class="form-label">Número de Cheque</label><input type="text" id="cheque-numero" class="form-input"></div>
-                        <div><label for="cheque-banco" class="form-label">Banco</label><input type="text" id="cheque-banco" class="form-input"></div>
-                        <div><label for="cheque-fecha-cobro" class="form-label">Fecha de Cobro</label><input type="date" id="cheque-fecha-cobro" class="form-input"></div>
-                    </div>
-                    <div class="mt-4">
-                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">Confirmar Cobro</button>
-                    </div>
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-full overflow-y-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Registrar Cobro de Factura</h3>
+                    <button id="close-payment-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
                 </div>
-            </form>
+                <form id="payment-form">
+                    <input type="hidden" id="invoice-id">
+                    <input type="hidden" id="invoice-client">
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4 text-center">
+                        <p class="text-sm text-gray-600">Total a Cobrar</p>
+                        <p id="invoice-total-display" class="text-3xl font-bold text-blue-600"></p>
+                    </div>
+                    <div id="payment-methods-container" class="space-y-4 mb-4"></div>
+                    <button type="button" id="add-payment-method" class="w-full flex items-center justify-center text-sm font-semibold text-blue-600 border-2 border-dashed border-gray-300 rounded-lg py-3 hover:bg-gray-50 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        Agregar otro método de pago
+                    </button>
+                    <div class="bg-gray-50 p-4 rounded-lg mt-4 flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-600">Total Cubierto</p>
+                            <p id="covered-total-display" class="text-xl font-bold text-gray-800"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-600">Restante</p>
+                            <p id="remaining-total-display" class="text-xl font-bold text-red-600"></p>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button type="submit" id="confirm-payment-btn" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors" disabled>
+                            Confirmar Cobro
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
