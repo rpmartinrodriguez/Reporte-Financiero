@@ -1,5 +1,5 @@
 import { db, authReady } from './firebase-config.js';
-import { collection, onSnapshot, getDocs, doc, getDoc } from "https://www.gstatic.comcom/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, onSnapshot, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 authReady.then(() => {
     // --- ELEMENTOS DEL DOM ---
