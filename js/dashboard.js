@@ -100,7 +100,6 @@ authReady.then(() => {
         const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const activosData = [];
         itemsData.forEach(item => {
-            // CAMBIO CLAVE: Asegurarnos de que el valor a mostrar y sumar para los activos no sea negativo.
             const displayValue = item.tipo === 'activo' ? Math.max(0, item.valor) : item.valor;
 
             if (item.tipo === 'activo') {
