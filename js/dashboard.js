@@ -19,7 +19,16 @@ authReady.then(() => {
     let currentDate = new Date();
     const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
     const calendarFormat = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
-    const pageMapping = { "Saldo Bancario": "bancos.html", "Clientes a Cobrar": "clientes.html", "Cheques en cartera": "cheques-cartera.html", "Cheques pendiente de cobro": "cheques-pendientes.html", "Proveedores a pagar": "proveedores.html", "Cheques a pagar": "cheques-pagar.html" };
+    
+    const pageMapping = { 
+        "Saldo Bancario": "bancos.html", 
+        "Clientes a Cobrar": "clientes.html", 
+        "Cheques en cartera": "cheques-cartera.html", 
+        "Cheques pendiente de cobro": "cheques-pendientes.html", 
+        "Proveedores a pagar": "proveedores.html", 
+        "Cheques a pagar": "cheques-pagar.html",
+        "Gastos Fijos": "gastos-fijos.html"
+    };
     
     // --- LÓGICA DE NOTIFICACIONES ---
     async function renderNotifications() {
@@ -160,36 +169,78 @@ authReady.then(() => {
     async function renderCalendarWidget() {
         if (!calendarGrid) return;
         calendarGrid.innerHTML = '<div class="col-span-7 text-center py-10">Calculando flujo de caja...</div>';
+        
         const balanceRef = doc(db, 'config', 'initial_balances');
         const balanceSnap = await getDoc(balanceRef);
         const saldoInicial = balanceSnap.exists() ? balanceSnap.data().saldo_bancario_inicial : 0;
+
         const itemsSnapshot = await getDocs(collection(db, 'items'));
         const allEvents = [];
-        const itemConfigs = [ { name: "Saldo Bancario", sub: "movimientos_bancarios", dateField: "fecha", amountField: "monto", sign: 1 }, { name: "Clientes a Cobrar", sub: "facturas", dateField: "fecha_vencimiento", amountField: "saldo_neto", sign: 1 }, { name: "Cheques en cartera", sub: "cheques_detalle_cartera", dateField: "fecha_cobro", amountField: "monto", sign: 1 }, { name: "Cheques pendiente de cobro", sub: "cheques_detalle_pendientes", dateField: "fecha_cobro", amountField: "monto", sign: 1 }, { name: "Proveedores a pagar", sub: "facturas_proveedores", dateField: "fecha_vencimiento", amountField: "saldo", sign: -1 }, { name: "Cheques a pagar", sub: "cheques_emitidos", dateField: "fecha_emision", amountField: "monto", sign: -1 } ];
+        const itemConfigs = [ 
+            { name: "Saldo Bancario", sub: "movimientos_bancarios", dateField: "fecha", amountField: "monto", sign: 1 }, 
+            { name: "Clientes a Cobrar", sub: "facturas", dateField: "fecha_vencimiento", amountField: "saldo_neto", sign: 1 }, 
+            { name: "Cheques en cartera", sub: "cheques_detalle_cartera", dateField: "fecha_cobro", amountField: "monto", sign: 1 }, 
+            { name: "Cheques pendiente de cobro", sub: "cheques_detalle_pendientes", dateField: "fecha_cobro", amountField: "monto", sign: 1 }, 
+            { name: "Proveedores a pagar", sub: "facturas_proveedores", dateField: "fecha_vencimiento", amountField: "saldo", sign: -1 }, 
+            { name: "Cheques a pagar", sub: "cheques_emitidos", dateField: "fecha_emision", amountField: "monto", sign: -1 } 
+        ];
+
         for (const config of itemConfigs) {
             const parentDoc = itemsSnapshot.docs.find(doc => doc.data().nombre === config.name);
             if (parentDoc) {
                 const subSnapshot = await getDocs(collection(db, 'items', parentDoc.id, config.sub));
                 subSnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data[config.dateField] && data[config.amountField] !== 0) { allEvents.push({ date: data[config.dateField], amount: data[config.amountField] * config.sign }); }
+                    if (data[config.dateField] && data[config.amountField] !== 0) { 
+                        allEvents.push({ date: data[config.dateField], amount: data[config.amountField] * config.sign }); 
+                    }
                 });
             }
         }
+        
+        const gastosFijosParentDoc = itemsSnapshot.docs.find(doc => doc.data().nombre === "Gastos Fijos");
+        if (gastosFijosParentDoc) {
+            const gastosFijosSnap = await getDocs(collection(db, 'items', gastosFijosParentDoc.id, 'gastos_detalle'));
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+            const monthId = `${year}-${String(month).padStart(2, '0')}`;
+            
+            for (const gastoDoc of gastosFijosSnap.docs) {
+                const gastoData = gastoDoc.data();
+                const paymentRef = doc(db, gastoDoc.ref.path, 'pagos_realizados', monthId);
+                const paymentSnap = await getDoc(paymentRef);
+                if (!paymentSnap.exists()) {
+                    const eventDate = `${year}-${String(month).padStart(2, '0')}-${String(gastoData.dia_vencimiento).padStart(2, '0')}`;
+                    allEvents.push({ date: eventDate, amount: -gastoData.monto });
+                }
+            }
+        }
+
         const dailyTotals = allEvents.reduce((acc, event) => {
             if (!acc[event.date]) acc[event.date] = { netChange: 0 };
             acc[event.date].netChange += event.amount;
             return acc;
         }, {});
+        
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         monthYearDisplay.textContent = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentDate);
+        
         const firstDayOfMonth = new Date(year, month, 1);
         const daysInMonth = new Date(year, month + 1, 0).getDate();
+
         let runningBalance = saldoInicial;
-        for (const dateStr in dailyTotals) { if (new Date(dateStr + 'T00:00:00') < firstDayOfMonth) { runningBalance += dailyTotals[dateStr].netChange; } }
+        for (const dateStr in dailyTotals) {
+            if (new Date(dateStr + 'T00:00:00') < firstDayOfMonth) {
+                runningBalance += dailyTotals[dateStr].netChange;
+            }
+        }
+        
         calendarGrid.innerHTML = '';
-        for (let i = 0; i < firstDayOfMonth.getDay(); i++) calendarGrid.innerHTML += `<div class="calendar-day other-month"></div>`;
+        for (let i = 0; i < firstDayOfMonth.getDay(); i++) {
+            calendarGrid.innerHTML += `<div class="calendar-day other-month"></div>`;
+        }
+
         for (let day = 1; day <= daysInMonth; day++) {
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const totals = dailyTotals[dateStr] || { netChange: 0 };
