@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión - Gastos Fijos</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <nav class="bg-white shadow-md sticky top-0 z-20">
+        <!-- (Pega aquí el código completo de la barra de navegación de cualquier otra página) -->
+    </nav>
+    
+    <main class="container mx-auto p-4 md:p-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Gestión de Gastos Fijos</h1>
+
+        <div class="mb-10 bg-white rounded-xl shadow-md">
+            <button id="toggle-form-button" class="w-full flex justify-between items-center p-6 text-left">
+                <h2 class="text-2xl font-bold text-gray-800">Cargar Nuevo Gasto Fijo</h2>
+                <div id="toggle-icon" class="w-8 h-8 flex items-center justify-center bg-blue-600 text-white rounded-full transition-transform duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" /></svg>
+                </div>
+            </button>
+            
+            <section id="form-section" class="form-section-collapsible hidden px-6">
+                <form id="data-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6">
+                    <div><label for="descripcion" class="form-label">Descripción</label><input type="text" id="descripcion" name="descripcion" class="form-input" required></div>
+                    <div><label for="monto" class="form-label">Monto Mensual</label><input type="number" id="monto" name="monto" step="0.01" class="form-input" required></div>
+                    <div><label for="dia_vencimiento" class="form-label">Día de Vencimiento (1-31)</label><input type="number" id="dia_vencimiento" name="dia_vencimiento" min="1" max="31" class="form-input" required></div>
+                    <div class="md:col-span-3"><button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">Agregar Gasto</button></div>
+                </form>
+            </section>
+        </div>
+
+        <div id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md">
+            <p>Cargando gastos fijos...</p>
+        </div>
+    </main>
+
+    <!-- MODAL PARA PAGAR GASTO FIJO -->
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Registrar Pago de Gasto Fijo</h3>
+                    <button id="close-payment-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                </div>
+                <form id="payment-form">
+                    <input type="hidden" id="expense-id">
+                    <input type="hidden" id="expense-data">
+                    <p class="mb-4">Vas a registrar el pago de <strong id="payment-expense-name"></strong> para el mes de <strong id="payment-month-name"></strong>.</p>
+                    <div class="space-y-4">
+                        <div><label for="metodo_pago" class="form-label">Método de Pago</label><select id="metodo_pago" name="metodo_pago" class="form-input"><option value="Transferencia">Transferencia</option><option value="Efectivo">Efectivo</option></select></div>
+                        <div class="mt-6"><button type="submit" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">Confirmar Pago</button></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA EDITAR GASTO FIJO -->
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-gray-800">Editar Gasto Fijo</h3>
+                    <button id="close-edit-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                </div>
+                <form id="edit-form">
+                    <input type="hidden" id="edit-expense-id">
+                    <div class="space-y-4">
+                        <div><label for="edit-descripcion" class="form-label">Descripción</label><input type="text" id="edit-descripcion" name="descripcion" class="form-input" required></div>
+                        <div><label for="edit-monto" class="form-label">Monto Mensual</label><input type="number" id="edit-monto" name="monto" step="0.01" class="form-input" required></div>
+                        <div><label for="edit-dia_vencimiento" class="form-label">Día de Vencimiento (1-31)</label><input type="number" id="edit-dia_vencimiento" name="dia_vencimiento" min="1" max="31" class="form-input" required></div>
+                        <div class="mt-6 flex space-x-2">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">Guardar Cambios</button>
+                            <button type="button" id="delete-expense-btn" class="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">Eliminar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+    <script type="module" src="./js/gastos-fijos.js"></script>
+</body>
+</html>
