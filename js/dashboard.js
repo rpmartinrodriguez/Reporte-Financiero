@@ -21,7 +21,8 @@ authReady.then(() => {
     const calendarFormat = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
     
     const pageMapping = { 
-        "Saldo Bancario": "bancos.html", 
+        "Saldo Bancario": "bancos.html",
+        "Saldo Efectivo": "efectivo.html",
         "Clientes a Cobrar": "clientes.html", 
         "Cheques en cartera": "cheques-cartera.html", 
         "Cheques pendiente de cobro": "cheques-pendientes.html", 
@@ -187,6 +188,8 @@ authReady.then(() => {
         const allEvents = [];
         const itemConfigs = [ 
             { name: "Saldo Bancario", sub: "movimientos_bancarios", dateField: "fecha", amountField: "monto", sign: 1 }, 
+            { name: "Saldo Efectivo", sub: "movimientos_caja", dateField: "fecha", amountField: "monto_caja_1", sign: 1 },
+            { name: "Saldo Efectivo", sub: "movimientos_caja", dateField: "fecha", amountField: "monto_caja_2", sign: 1 },
             { name: "Clientes a Cobrar", sub: "facturas", dateField: "fecha_vencimiento", amountField: "saldo_neto", sign: 1 }, 
             { name: "Cheques en cartera", sub: "cheques_detalle_cartera", dateField: "fecha_cobro", amountField: "monto", sign: 1 }, 
             { name: "Cheques pendiente de cobro", sub: "cheques_detalle_pendientes", dateField: "fecha_cobro", amountField: "monto", sign: 1 }, 
