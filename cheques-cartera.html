@@ -87,6 +87,7 @@
             <select id="status-filter" class="filter-select">
                 <option value="todos">Todos los estados</option>
                 <option value="En cartera">En cartera</option>
+                <option value="Entregado">Entregado</option>
             </select>
         </div>
         <div id="detail-table-container" class="bg-white p-6 md:p-8 rounded-xl shadow-md"><p>Cargando cheques...</p></div>
@@ -124,14 +125,8 @@
                             </div>
                         </div>
                         <div id="venta-cheque-fields" class="hidden space-y-4 border-t pt-4">
-                            <div>
-                                <label for="venta-monto-acreditar" class="form-label">Monto Neto a Acreditar</label>
-                                <input type="number" id="venta-monto-acreditar" class="form-input" step="0.01" required>
-                            </div>
-                            <div>
-                                <label for="venta-gastos" class="form-label">Gastos de Venta</label>
-                                <input type="number" id="venta-gastos" class="form-input" readonly>
-                            </div>
+                            <div><label for="venta-monto-acreditar" class="form-label">Monto Neto a Acreditar</label><input type="number" id="venta-monto-acreditar" class="form-input" step="0.01" required></div>
+                            <div><label for="venta-gastos" class="form-label">Gastos de Venta</label><input type="number" id="venta-gastos" class="form-input" readonly></div>
                         </div>
                     </div>
                     <div class="mt-6">
@@ -152,13 +147,27 @@
                 <form id="edit-form">
                     <input type="hidden" id="edit-cheque-id">
                     <input type="hidden" id="edit-cheque-original-monto">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label for="edit-fecha_emision" class="form-label">Fecha de Emisión</label><input type="date" id="edit-fecha_emision" name="fecha_emision" class="form-input" required></div>
-                        <div><label for="edit-fecha_cobro" class="form-label">Fecha de Cobro</label><input type="date" id="edit-fecha_cobro" name="fecha_cobro" class="form-input" required></div>
-                        <div><label for="edit-numero_cheque" class="form-label">Número de Cheque</label><input type="text" id="edit-numero_cheque" name="numero_cheque" class="form-input" required></div>
-                        <div><label for="edit-librador" class="form-label">Librador</label><input type="text" id="edit-librador" name="librador" class="form-input" required></div>
-                        <div><label for="edit-banco" class="form-label">Banco</label><input type="text" id="edit-banco" name="banco" class="form-input" required></div>
-                        <div><label for="edit-monto" class="form-label">Monto</label><input type="number" id="edit-monto" name="monto" step="0.01" class="form-input" required></div>
+                    <input type="hidden" id="edit-cheque-original-status">
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label for="edit-fecha_emision" class="form-label">Fecha de Emisión</label><input type="date" id="edit-fecha_emision" name="fecha_emision" class="form-input" required></div>
+                            <div><label for="edit-fecha_cobro" class="form-label">Fecha de Cobro</label><input type="date" id="edit-fecha_cobro" name="fecha_cobro" class="form-input" required></div>
+                            <div><label for="edit-numero_cheque" class="form-label">Número de Cheque</label><input type="text" id="edit-numero_cheque" name="numero_cheque" class="form-input" required></div>
+                            <div><label for="edit-librador" class="form-label">Librador</label><input type="text" id="edit-librador" name="librador" class="form-input" required></div>
+                            <div><label for="edit-banco" class="form-label">Banco</label><input type="text" id="edit-banco" name="banco" class="form-input" required></div>
+                            <div><label for="edit-monto" class="form-label">Monto</label><input type="number" id="edit-monto" name="monto" step="0.01" class="form-input" required></div>
+                        </div>
+                        <div>
+                            <label for="edit-estado" class="form-label">Estado</label>
+                            <select id="edit-estado" name="estado" class="form-input">
+                                <option value="En cartera">En cartera</option>
+                                <option value="Entregado">Entregado (Forma de Pago)</option>
+                            </select>
+                        </div>
+                        <div id="edit-entregado-fields" class="hidden space-y-4 border-t pt-4">
+                            <div><label for="edit-entregado-a" class="form-label">Entregado a (Proveedor)</label><input type="text" id="edit-entregado-a" class="form-input"></div>
+                            <div><label for="edit-factura-cubierta" class="form-label">Nº Factura Cubierta</label><input type="text" id="edit-factura-cubierta" class="form-input"></div>
+                        </div>
                     </div>
                     <div class="mt-6 flex space-x-2">
                         <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700">Guardar Cambios</button>
