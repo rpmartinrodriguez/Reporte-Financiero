@@ -103,23 +103,32 @@ authReady.then(() => {
     }
 
     // --- LÓGICA PRINCIPAL DEL DASHBOARD ---
-    onSnapshot(collection(db, 'items'), (snapshot) => {
+    onSnapshot(collection(db, 'items'), async (snapshot) => {
         let totalActivos = 0, totalPasivos = 0;
         activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
-        const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), ref: doc.ref }));
         const activosData = [];
-        itemsData.forEach(item => {
-            const displayValue = item.tipo === 'activo' ? Math.max(0, item.valor) : item.valor;
+
+        for (const item of itemsData) {
+            let displayValue = item.valor;
+
+            if (item.nombre === "Gastos Fijos") {
+                const gastosSnap = await getDocs(collection(item.ref, 'gastos_detalle'));
+                displayValue = gastosSnap.docs.reduce((sum, doc) => sum + doc.data().monto, 0);
+            }
+
+            const finalDisplayValue = item.tipo === 'activo' ? Math.max(0, displayValue) : displayValue;
 
             if (item.tipo === 'activo') {
-                totalActivos += displayValue;
-                activosListEl.appendChild(createDetailCard(item, displayValue));
-                if (displayValue > 0) activosData.push({ label: item.nombre, value: displayValue });
+                totalActivos += finalDisplayValue;
+                activosListEl.appendChild(createDetailCard(item, finalDisplayValue));
+                if (finalDisplayValue > 0) activosData.push({ label: item.nombre, value: finalDisplayValue });
             } else if (item.tipo === 'pasivo') {
-                totalPasivos += displayValue;
-                pasivosListEl.appendChild(createDetailCard(item, displayValue));
+                totalPasivos += finalDisplayValue;
+                pasivosListEl.appendChild(createDetailCard(item, finalDisplayValue));
             }
-        });
+        }
+
         totalActivosEl.textContent = formatCurrency(totalActivos);
         totalPasivosEl.textContent = formatCurrency(totalPasivos);
         updateTotalsChart(totalActivos, totalPasivos);
