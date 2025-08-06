@@ -41,43 +41,53 @@ authReady.then(() => {
         const grid = detailTableContainer.querySelector('.details-grid');
         const currentMonthId = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
-        docs.forEach(async (docSnap) => {
+        // Usamos Promise.all para manejar las lecturas asíncronas de forma eficiente
+        Promise.all(docs.map(async (docSnap) => {
             const data = docSnap.data();
-            const card = document.createElement('div');
-            card.className = 'detail-card';
-            
             const paymentRef = doc(db, docSnap.ref.path, 'pagos_realizados', currentMonthId);
             const paymentSnap = await getDoc(paymentRef);
             const isPaidThisMonth = paymentSnap.exists();
-            const statusClass = isPaidThisMonth ? 'status-pagada' : 'status-pendiente';
+            return { id: docSnap.id, data, isPaidThisMonth };
+        })).then(results => {
+            grid.innerHTML = ''; // Limpiar antes de volver a renderizar
+            results.forEach(result => {
+                const { id, data, isPaidThisMonth } = result;
+                const card = document.createElement('div');
+                card.className = 'detail-card';
+                const statusClass = isPaidThisMonth ? 'status-pagada' : 'status-pendiente';
 
-            card.innerHTML = `
-                <div class="card-header">
-                    <h3 class="card-title">${data.descripcion}</h3>
-                    <span class="status-badge ${statusClass}">${isPaidThisMonth ? 'Pagado este mes' : 'Pendiente este mes'}</span>
-                </div>
-                <div class="card-body">
-                    <div class="card-main-info">
-                        <p class="card-main-label">Monto Mensual</p>
-                        <p class="card-amount negative">${formatCurrency(data.monto)}</p>
+                card.innerHTML = `
+                    <div class="card-header">
+                        <h3 class="card-title">${data.descripcion}</h3>
+                        <span class="status-badge ${statusClass}">${isPaidThisMonth ? 'Pagado este mes' : 'Pendiente este mes'}</span>
                     </div>
-                    <div class="card-secondary-info">
-                        <div class="info-item">
-                            <p class="info-label">Día de Vencimiento</p>
-                            <p class="info-value">Día ${data.dia_vencimiento} de cada mes</p>
+                    <div class="card-body">
+                        <div class="card-main-info">
+                            <p class="card-main-label">Monto Mensual</p>
+                            <p class="card-amount negative">${formatCurrency(data.monto)}</p>
+                        </div>
+                        <div class="card-secondary-info">
+                            <div class="info-item">
+                                <p class="info-label">Día de Vencimiento</p>
+                                <p class="info-value">Día ${data.dia_vencimiento} de cada mes</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="card-footer">
-                    <button class="action-button secondary edit-expense-btn" data-id="${docSnap.id}" data-expense='${JSON.stringify(data)}'>Editar</button>
-                    ${!isPaidThisMonth ? `<button class="action-button success pay-expense-btn" data-id="${docSnap.id}" data-expense='${JSON.stringify(data)}'>Pagar este mes</button>` : ''}
-                </div>
-            `;
-            grid.appendChild(card);
-        });
+                    <div class="card-footer">
+                        <button class="action-button secondary edit-expense-btn" data-id="${id}" data-expense='${JSON.stringify(data)}'>Editar</button>
+                        ${!isPaidThisMonth ? `<button class="action-button success pay-expense-btn" data-id="${id}" data-expense='${JSON.stringify(data)}'>Pagar este mes</button>` : ''}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
 
-        // Add event listeners AFTER rendering all cards
-        grid.querySelectorAll('.edit-expense-btn').forEach(button => {
+            // Re-asignar event listeners después de que todas las tarjetas se hayan renderizado
+            assignEventListeners();
+        });
+    }
+
+    function assignEventListeners() {
+        document.querySelectorAll('.edit-expense-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const expenseId = e.currentTarget.dataset.id;
                 const expenseData = JSON.parse(e.currentTarget.dataset.expense);
@@ -90,7 +100,7 @@ authReady.then(() => {
             });
         });
 
-        grid.querySelectorAll('.pay-expense-btn').forEach(button => {
+        document.querySelectorAll('.pay-expense-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const expenseId = e.currentTarget.dataset.id;
                 const expenseData = JSON.parse(e.currentTarget.dataset.expense);
