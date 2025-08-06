@@ -1,5 +1,5 @@
 import { db, authReady } from './firebase-config.js';
-import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { collection, doc, addDoc, onSnapshot, runTransaction, query, where, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
 authReady.then(() => {
     // --- CONFIGURACIÓN Y CONSTANTES ---
@@ -23,6 +23,10 @@ authReady.then(() => {
     const depositForm = document.getElementById('deposit-form');
     const ventaChequeFields = document.getElementById('venta-cheque-fields');
     const confirmDepositBtn = document.getElementById('confirm-deposit-btn');
+    const editModal = document.getElementById('edit-modal');
+    const closeEditModalButton = document.getElementById('close-edit-modal');
+    const editForm = document.getElementById('edit-form');
+    const deleteChequeBtn = document.getElementById('delete-cheque-btn');
     
     // --- ESTADO GLOBAL DE LA PÁGINA ---
     let allDocs = [];
@@ -182,13 +186,18 @@ authReady.then(() => {
                     </div>
                 </div>
                 <div class="card-footer">
-                    <button class="action-button secondary deposit-cheque-btn" data-id="${doc.id}" data-cheque='${JSON.stringify(data)}'>Depositar</button>
-                    <button class="action-button primary generate-reminder-btn" data-librador="${data.librador}" data-monto="${data.monto}" data-fecha="${data.fecha_cobro}">✨ Recordatorio</button>
+                    <button class="action-button secondary edit-cheque-btn" data-id="${doc.id}" data-cheque='${JSON.stringify(data)}'>Editar</button>
+                    <button class="action-button primary deposit-cheque-btn" data-id="${doc.id}" data-cheque='${JSON.stringify(data)}'>Depositar</button>
+                    <button class="action-button success generate-reminder-btn" data-librador="${data.librador}" data-monto="${data.monto}" data-fecha="${data.fecha_cobro}">✨ Recordatorio</button>
                 </div>
             `;
             grid.appendChild(card);
         });
         
+        assignActionListeners();
+    }
+
+    function assignActionListeners() {
         detailTableContainer.querySelectorAll('.generate-reminder-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const { librador, monto, fecha } = e.currentTarget.dataset;
@@ -214,26 +223,36 @@ authReady.then(() => {
                 depositModal.classList.add('flex');
             });
         });
+        detailTableContainer.querySelectorAll('.edit-cheque-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const chequeId = e.currentTarget.dataset.id;
+                const chequeData = JSON.parse(e.currentTarget.dataset.cheque);
+                document.getElementById('edit-cheque-id').value = chequeId;
+                document.getElementById('edit-cheque-original-monto').value = chequeData.monto;
+                document.getElementById('edit-fecha_emision').value = chequeData.fecha_emision;
+                document.getElementById('edit-fecha_cobro').value = chequeData.fecha_cobro;
+                document.getElementById('edit-numero_cheque').value = chequeData.numero_cheque;
+                document.getElementById('edit-librador').value = chequeData.librador;
+                document.getElementById('edit-banco').value = chequeData.banco;
+                document.getElementById('edit-monto').value = chequeData.monto;
+                editModal.classList.remove('hidden');
+                editModal.classList.add('flex');
+            });
+        });
     }
 
     async function initializePage() {
         searchInput.addEventListener('input', () => { currentPage = 1; applyFiltersAndPagination(); });
         statusFilter.addEventListener('change', () => { currentPage = 1; applyFiltersAndPagination(); });
-        const itemsRef = collection(db, 'items');
-        let mainDocRef;
-        const q = query(itemsRef, where("nombre", "==", ITEM_NAME));
-        const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) {
-            const newMainDoc = await addDoc(itemsRef, { nombre: ITEM_NAME, valor: 0, tipo: ITEM_TYPE });
-            mainDocRef = doc(db, 'items', newMainDoc.id);
-        } else {
-            mainDocRef = querySnapshot.docs[0].ref;
-        }
+        
+        const mainDocRef = await getOrCreateMainItemRef(ITEM_NAME, ITEM_TYPE);
         const subcollectionRef = collection(mainDocRef, SUBCOLLECTION_NAME);
+
         onSnapshot(subcollectionRef, (snapshot) => {
             allDocs = snapshot.docs.sort((a, b) => new Date(b.data().fecha_cobro) - new Date(a.data().fecha_cobro));
             applyFiltersAndPagination();
         });
+
         dataForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(dataForm);
@@ -250,6 +269,58 @@ authReady.then(() => {
                 t.set(doc(subcollectionRef), newDocData);
             });
             dataForm.reset();
+        });
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const chequeId = document.getElementById('edit-cheque-id').value;
+            const originalMonto = parseFloat(document.getElementById('edit-cheque-original-monto').value);
+            const updatedData = {
+                fecha_emision: document.getElementById('edit-fecha_emision').value,
+                fecha_cobro: document.getElementById('edit-fecha_cobro').value,
+                numero_cheque: document.getElementById('edit-numero_cheque').value,
+                librador: document.getElementById('edit-librador').value,
+                banco: document.getElementById('edit-banco').value,
+                monto: parseFloat(document.getElementById('edit-monto').value)
+            };
+            const montoDifference = updatedData.monto - originalMonto;
+            try {
+                const chequeRef = doc(db, mainDocRef.path, SUBCOLLECTION_NAME, chequeId);
+                await runTransaction(db, async (transaction) => {
+                    const mainDoc = await transaction.get(mainDocRef);
+                    if (!mainDoc.exists()) throw "El documento principal no existe.";
+                    const newTotal = (mainDoc.data().valor || 0) + montoDifference;
+                    transaction.update(mainDocRef, { valor: newTotal });
+                    transaction.update(chequeRef, updatedData);
+                });
+                alert("Cheque actualizado con éxito.");
+                editModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al actualizar el cheque:", error);
+                alert("Hubo un error al guardar los cambios.");
+            }
+        });
+
+        deleteChequeBtn.addEventListener('click', async () => {
+            const chequeId = document.getElementById('edit-cheque-id').value;
+            const monto = parseFloat(document.getElementById('edit-cheque-original-monto').value);
+            if (confirm("¿Estás seguro de que quieres eliminar este cheque permanentemente?")) {
+                try {
+                    const chequeRef = doc(db, mainDocRef.path, SUBCOLLECTION_NAME, chequeId);
+                    await runTransaction(db, async (transaction) => {
+                        const mainDoc = await transaction.get(mainDocRef);
+                        if (!mainDoc.exists()) throw "El documento principal no existe.";
+                        const newTotal = (mainDoc.data().valor || 0) - monto;
+                        transaction.update(mainDocRef, { valor: newTotal });
+                        transaction.delete(chequeRef);
+                    });
+                    alert("Cheque eliminado con éxito.");
+                    editModal.classList.add('hidden');
+                } catch (error) {
+                    console.error("Error al eliminar el cheque:", error);
+                    alert("Hubo un error al eliminar el cheque.");
+                }
+            }
         });
     }
 
@@ -269,6 +340,7 @@ authReady.then(() => {
             confirmDepositBtn.textContent = isVenta ? 'Confirmar Venta' : 'Confirmar Depósito';
         });
     });
+    closeEditModalButton.addEventListener('click', () => editModal.classList.add('hidden'));
 
     initializePage();
 });
