@@ -67,12 +67,12 @@
 
         <section class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
             <div class="summary-card bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-lg font-semibold text-gray-500">Saldo Caja 1</h2>
-                <p id="saldo-caja-1" class="text-3xl font-bold text-blue-600 mt-2">Cargando...</p>
+                <h2 class="text-lg font-semibold text-gray-500">Saldo Caja Administrativa</h2>
+                <p id="saldo-caja-admin" class="text-3xl font-bold text-blue-600 mt-2">Cargando...</p>
             </div>
             <div class="summary-card bg-white p-6 rounded-xl shadow-md">
-                <h2 class="text-lg font-semibold text-gray-500">Saldo Caja 2</h2>
-                <p id="saldo-caja-2" class="text-3xl font-bold text-blue-600 mt-2">Cargando...</p>
+                <h2 class="text-lg font-semibold text-gray-500">Saldo Caja Operativa</h2>
+                <p id="saldo-caja-op" class="text-3xl font-bold text-blue-600 mt-2">Cargando...</p>
             </div>
         </section>
 
@@ -87,14 +87,20 @@
                 <form id="data-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
                     <div><label for="fecha" class="form-label">Fecha</label><input type="date" id="fecha" name="fecha" class="form-input" required></div>
                     <div class="lg:col-span-2"><label for="observaciones" class="form-label">Observaciones</label><input type="text" id="observaciones" name="observaciones" class="form-input" required></div>
-                    <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2"><h3 class="font-semibold text-gray-700 mb-2">Caja 1</h3><div class="grid grid-cols-2 gap-4">
-                            <div><label for="ingreso_caja_1" class="form-label">Ingreso Caja 1</label><input type="number" id="ingreso_caja_1" name="ingreso_caja_1" step="0.01" class="form-input" placeholder="0.00"></div>
-                            <div><label for="egreso_caja_1" class="form-label">Egreso Caja 1</label><input type="number" id="egreso_caja_1" name="egreso_caja_1" step="0.01" class="form-input" placeholder="0.00"></div>
-                        </div></div>
-                    <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2"><h3 class="font-semibold text-gray-700 mb-2">Caja 2</h3><div class="grid grid-cols-2 gap-4">
-                            <div><label for="ingreso_caja_2" class="form-label">Ingreso Caja 2</label><input type="number" id="ingreso_caja_2" name="ingreso_caja_2" step="0.01" class="form-input" placeholder="0.00"></div>
-                            <div><label for="egreso_caja_2" class="form-label">Egreso Caja 2</label><input type="number" id="egreso_caja_2" name="egreso_caja_2" step="0.01" class="form-input" placeholder="0.00"></div>
-                        </div></div>
+                    <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2">
+                        <h3 class="font-semibold text-gray-700 mb-2">Caja Administrativa</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="ingreso_caja_admin" class="form-label">Ingreso</label><input type="number" id="ingreso_caja_admin" name="ingreso_caja_admin" step="0.01" class="form-input" placeholder="0.00"></div>
+                            <div><label for="egreso_caja_admin" class="form-label">Egreso</label><input type="number" id="egreso_caja_admin" name="egreso_caja_admin" step="0.01" class="form-input" placeholder="0.00"></div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2">
+                        <h3 class="font-semibold text-gray-700 mb-2">Caja Operativa</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="ingreso_caja_op" class="form-label">Ingreso</label><input type="number" id="ingreso_caja_op" name="ingreso_caja_op" step="0.01" class="form-input" placeholder="0.00"></div>
+                            <div><label for="egreso_caja_op" class="form-label">Egreso</label><input type="number" id="egreso_caja_op" name="egreso_caja_op" step="0.01" class="form-input" placeholder="0.00"></div>
+                        </div>
+                    </div>
                     <div class="lg:col-span-3"><button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700">Agregar Movimiento</button></div>
                 </form>
             </section>
@@ -112,18 +118,18 @@
                 </div>
                 <form id="edit-form">
                     <input type="hidden" id="edit-movimiento-id">
-                    <input type="hidden" id="edit-original-monto1">
-                    <input type="hidden" id="edit-original-monto2">
+                    <input type="hidden" id="edit-original-monto-admin">
+                    <input type="hidden" id="edit-original-monto-op">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div><label for="edit-fecha" class="form-label">Fecha</label><input type="date" id="edit-fecha" name="fecha" class="form-input" required></div>
                         <div class="lg:col-span-2"><label for="edit-observaciones" class="form-label">Observaciones</label><input type="text" id="edit-observaciones" name="observaciones" class="form-input" required></div>
-                        <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2"><h3 class="font-semibold text-gray-700 mb-2">Caja 1</h3><div class="grid grid-cols-2 gap-4">
-                                <div><label for="edit-ingreso_caja_1" class="form-label">Ingreso Caja 1</label><input type="number" id="edit-ingreso_caja_1" name="ingreso_caja_1" step="0.01" class="form-input" placeholder="0.00"></div>
-                                <div><label for="edit-egreso_caja_1" class="form-label">Egreso Caja 1</label><input type="number" id="edit-egreso_caja_1" name="egreso_caja_1" step="0.01" class="form-input" placeholder="0.00"></div>
+                        <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2"><h3 class="font-semibold text-gray-700 mb-2">Caja Administrativa</h3><div class="grid grid-cols-2 gap-4">
+                                <div><label for="edit-ingreso_caja_admin" class="form-label">Ingreso</label><input type="number" id="edit-ingreso_caja_admin" name="ingreso_caja_admin" step="0.01" class="form-input" placeholder="0.00"></div>
+                                <div><label for="edit-egreso_caja_admin" class="form-label">Egreso</label><input type="number" id="edit-egreso_caja_admin" name="egreso_caja_admin" step="0.01" class="form-input" placeholder="0.00"></div>
                             </div></div>
-                        <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2"><h3 class="font-semibold text-gray-700 mb-2">Caja 2</h3><div class="grid grid-cols-2 gap-4">
-                                <div><label for="edit-ingreso_caja_2" class="form-label">Ingreso Caja 2</label><input type="number" id="edit-ingreso_caja_2" name="ingreso_caja_2" step="0.01" class="form-input" placeholder="0.00"></div>
-                                <div><label for="edit-egreso_caja_2" class="form-label">Egreso Caja 2</label><input type="number" id="edit-egreso_caja_2" name="egreso_caja_2" step="0.01" class="form-input" placeholder="0.00"></div>
+                        <div class="md:col-span-1 lg:col-span-3 border-t pt-4 mt-2"><h3 class="font-semibold text-gray-700 mb-2">Caja Operativa</h3><div class="grid grid-cols-2 gap-4">
+                                <div><label for="edit-ingreso_caja_op" class="form-label">Ingreso</label><input type="number" id="edit-ingreso_caja_op" name="ingreso_caja_op" step="0.01" class="form-input" placeholder="0.00"></div>
+                                <div><label for="edit-egreso_caja_op" class="form-label">Egreso</label><input type="number" id="edit-egreso_caja_op" name="egreso_caja_op" step="0.01" class="form-input" placeholder="0.00"></div>
                             </div></div>
                     </div>
                     <div class="mt-6 flex space-x-2">
