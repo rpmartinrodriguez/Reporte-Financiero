@@ -27,6 +27,8 @@ authReady.then(() => {
     const closeEditModalButton = document.getElementById('close-edit-modal');
     const editForm = document.getElementById('edit-form');
     const deleteChequeBtn = document.getElementById('delete-cheque-btn');
+    const editEstadoSelect = document.getElementById('edit-estado');
+    const editEntregadoFields = document.getElementById('edit-entregado-fields');
     
     // --- ESTADO GLOBAL DE LA PÁGINA ---
     let allDocs = [];
@@ -174,7 +176,7 @@ authReady.then(() => {
             const data = doc.data();
             const card = document.createElement('div');
             card.className = 'detail-card';
-            const statusClass = { 'En cartera': 'status-en-cartera' }[data.estado] || 'status-en-cartera';
+            const statusClass = { 'En cartera': 'status-en-cartera', 'Entregado': 'status-vencido' }[data.estado] || 'status-en-cartera';
             card.innerHTML = `
                 <div class="card-header"><h3 class="card-title">${data.librador}</h3><span class="status-badge ${statusClass}">${data.estado}</span></div>
                 <div class="card-body">
@@ -184,10 +186,11 @@ authReady.then(() => {
                         <div class="info-item"><p class="info-label">Nº Cheque</p><p class="info-value font-mono">${data.numero_cheque}</p></div>
                         <div class="info-item"><p class="info-label">Banco</p><p class="info-value">${data.banco}</p></div>
                     </div>
+                    ${data.estado === 'Entregado' && data.entrega_info ? `<div class="mt-4 text-center text-sm text-gray-600 bg-gray-50 p-2 rounded-md">Entregado a ${data.entrega_info.entregado_a} (Factura ${data.entrega_info.factura_cubierta})</div>` : ''}
                 </div>
                 <div class="card-footer">
                     <button class="action-button secondary edit-cheque-btn" data-id="${doc.id}" data-cheque='${JSON.stringify(data)}'>Editar</button>
-                    <button class="action-button primary deposit-cheque-btn" data-id="${doc.id}" data-cheque='${JSON.stringify(data)}'>Depositar</button>
+                    ${data.estado === 'En cartera' ? `<button class="action-button primary deposit-cheque-btn" data-id="${doc.id}" data-cheque='${JSON.stringify(data)}'>Depositar</button>` : ''}
                     <button class="action-button success generate-reminder-btn" data-librador="${data.librador}" data-monto="${data.monto}" data-fecha="${data.fecha_cobro}">✨ Recordatorio</button>
                 </div>
             `;
@@ -206,10 +209,9 @@ authReady.then(() => {
         });
         detailTableContainer.querySelectorAll('.deposit-cheque-btn').forEach(button => {
             button.addEventListener('click', (e) => {
-                const chequeId = e.currentTarget.dataset.id;
                 const chequeData = JSON.parse(e.currentTarget.dataset.cheque);
-                document.getElementById('deposit-cheque-id').value = chequeId;
-                document.getElementById('deposit-cheque-data').value = JSON.stringify(chequeData);
+                document.getElementById('deposit-cheque-id').value = e.currentTarget.dataset.id;
+                document.getElementById('deposit-cheque-data').value = e.currentTarget.dataset.cheque;
                 document.getElementById('deposit-librador').textContent = chequeData.librador;
                 document.getElementById('deposit-monto').textContent = formatCurrency(chequeData.monto);
                 const montoAcreditarInput = document.getElementById('venta-monto-acreditar');
@@ -229,12 +231,17 @@ authReady.then(() => {
                 const chequeData = JSON.parse(e.currentTarget.dataset.cheque);
                 document.getElementById('edit-cheque-id').value = chequeId;
                 document.getElementById('edit-cheque-original-monto').value = chequeData.monto;
+                document.getElementById('edit-cheque-original-status').value = chequeData.estado;
                 document.getElementById('edit-fecha_emision').value = chequeData.fecha_emision;
                 document.getElementById('edit-fecha_cobro').value = chequeData.fecha_cobro;
                 document.getElementById('edit-numero_cheque').value = chequeData.numero_cheque;
                 document.getElementById('edit-librador').value = chequeData.librador;
                 document.getElementById('edit-banco').value = chequeData.banco;
                 document.getElementById('edit-monto').value = chequeData.monto;
+                editEstadoSelect.value = chequeData.estado;
+                editEntregadoFields.classList.toggle('hidden', chequeData.estado !== 'Entregado');
+                document.getElementById('edit-entregado-a').value = chequeData.entrega_info?.entregado_a || '';
+                document.getElementById('edit-factura-cubierta').value = chequeData.entrega_info?.factura_cubierta || '';
                 editModal.classList.remove('hidden');
                 editModal.classList.add('flex');
             });
@@ -263,7 +270,6 @@ authReady.then(() => {
             const amountToUpdate = newDocData.monto || 0;
             await runTransaction(db, async (t) => {
                 const mainDoc = await t.get(mainDocRef);
-                if (!mainDoc.exists()) throw "Doc principal no existe!";
                 const newTotal = (mainDoc.data().valor || 0) + amountToUpdate;
                 t.update(mainDocRef, { valor: newTotal });
                 t.set(doc(subcollectionRef), newDocData);
@@ -275,15 +281,35 @@ authReady.then(() => {
             e.preventDefault();
             const chequeId = document.getElementById('edit-cheque-id').value;
             const originalMonto = parseFloat(document.getElementById('edit-cheque-original-monto').value);
+            const originalStatus = document.getElementById('edit-cheque-original-status').value;
+            const newStatus = editEstadoSelect.value;
+            
             const updatedData = {
                 fecha_emision: document.getElementById('edit-fecha_emision').value,
                 fecha_cobro: document.getElementById('edit-fecha_cobro').value,
                 numero_cheque: document.getElementById('edit-numero_cheque').value,
                 librador: document.getElementById('edit-librador').value,
                 banco: document.getElementById('edit-banco').value,
-                monto: parseFloat(document.getElementById('edit-monto').value)
+                monto: parseFloat(document.getElementById('edit-monto').value),
+                estado: newStatus
             };
-            const montoDifference = updatedData.monto - originalMonto;
+
+            let montoDifference = 0;
+            if (originalStatus === 'En cartera' && newStatus === 'Entregado') {
+                montoDifference = -originalMonto;
+                updatedData.entrega_info = {
+                    entregado_a: document.getElementById('edit-entregado-a').value,
+                    factura_cubierta: document.getElementById('edit-factura-cubierta').value
+                };
+            } else if (originalStatus === 'Entregado' && newStatus === 'En cartera') {
+                montoDifference = updatedData.monto;
+                updatedData.entrega_info = null;
+            } else if (originalStatus === 'En cartera' && newStatus === 'En cartera') {
+                montoDifference = updatedData.monto - originalMonto;
+            } else {
+                montoDifference = updatedData.monto - originalMonto;
+            }
+
             try {
                 const chequeRef = doc(db, mainDocRef.path, SUBCOLLECTION_NAME, chequeId);
                 await runTransaction(db, async (transaction) => {
@@ -303,6 +329,7 @@ authReady.then(() => {
 
         deleteChequeBtn.addEventListener('click', async () => {
             const chequeId = document.getElementById('edit-cheque-id').value;
+            const originalStatus = document.getElementById('edit-cheque-original-status').value;
             const monto = parseFloat(document.getElementById('edit-cheque-original-monto').value);
             if (confirm("¿Estás seguro de que quieres eliminar este cheque permanentemente?")) {
                 try {
@@ -310,8 +337,10 @@ authReady.then(() => {
                     await runTransaction(db, async (transaction) => {
                         const mainDoc = await transaction.get(mainDocRef);
                         if (!mainDoc.exists()) throw "El documento principal no existe.";
-                        const newTotal = (mainDoc.data().valor || 0) - monto;
-                        transaction.update(mainDocRef, { valor: newTotal });
+                        if (originalStatus === 'En cartera') {
+                            const newTotal = (mainDoc.data().valor || 0) - monto;
+                            transaction.update(mainDocRef, { valor: newTotal });
+                        }
                         transaction.delete(chequeRef);
                     });
                     alert("Cheque eliminado con éxito.");
@@ -341,6 +370,9 @@ authReady.then(() => {
         });
     });
     closeEditModalButton.addEventListener('click', () => editModal.classList.add('hidden'));
+    editEstadoSelect.addEventListener('change', () => {
+        editEntregadoFields.classList.toggle('hidden', editEstadoSelect.value !== 'Entregado');
+    });
 
     initializePage();
 });
