@@ -46,7 +46,6 @@ authReady.then(() => {
             const card = document.createElement('div');
             card.className = 'detail-card';
             
-            // Verificar si ya fue pagado este mes
             const paymentRef = doc(db, docSnap.ref.path, 'pagos_realizados', currentMonthId);
             const paymentSnap = await getDoc(paymentRef);
             const isPaidThisMonth = paymentSnap.exists();
@@ -77,7 +76,7 @@ authReady.then(() => {
             grid.appendChild(card);
         });
 
-        // Add event listeners after rendering
+        // Add event listeners AFTER rendering all cards
         grid.querySelectorAll('.edit-expense-btn').forEach(button => {
             button.addEventListener('click', (e) => {
                 const expenseId = e.currentTarget.dataset.id;
