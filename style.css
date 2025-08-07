@@ -354,3 +354,12 @@ body {
 #ai-modal-content li {
     margin-bottom: 0.5rem;
 }
+
+/* --- NUEVO ESTILO PARA BOTÓN DE ACCIÓN (PELIGRO) --- */
+.action-button.danger {
+    background-color: #FEF2F2; /* bg-red-50 */
+    color: #991B1B; /* text-red-800 */
+}
+.action-button.danger:hover {
+    background-color: #FEE2E2; /* bg-red-100 */
+}
