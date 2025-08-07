@@ -35,13 +35,19 @@ authReady.then(() => {
         "Cheques a pagar": "cheques-pagar.html",
         "Gastos Fijos": "gastos-fijos.html"
     };
-
+    
     // --- LÓGICA DE IA (GEMINI) ---
     async function analyzeCashFlow() {
         if (!aiAnalysisModal || !aiModalContent) return;
         aiAnalysisModal.classList.remove('hidden');
         aiAnalysisModal.classList.add('flex');
         aiModalContent.innerHTML = '<p class="text-center py-8">Recolectando y analizando datos financieros...</p>';
+
+        const apiKey = window.VITE_GEMINI_API_KEY;
+        if (!apiKey || apiKey.startsWith("%VITE_")) {
+            aiModalContent.innerHTML = '<p class="text-red-500 text-center">Error: La clave de API de Gemini no está configurada. Por favor, añádela a las variables de entorno en Netlify y vuelve a desplegar el sitio.</p>';
+            return;
+        }
 
         const today = new Date();
         const futureDate = new Date();
@@ -51,14 +57,9 @@ authReady.then(() => {
         
         const dailyTotals = allEvents.reduce((acc, event) => {
             const date = event.date;
-            if (!acc[date]) {
-                acc[date] = { ingresos: 0, egresos: 0 };
-            }
-            if (event.amount > 0) {
-                acc[date].ingresos += event.amount;
-            } else {
-                acc[date].egresos += Math.abs(event.amount);
-            }
+            if (!acc[date]) { acc[date] = { ingresos: 0, egresos: 0 }; }
+            if (event.amount > 0) { acc[date].ingresos += event.amount; }
+            else { acc[date].egresos += Math.abs(event.amount); }
             return acc;
         }, {});
 
@@ -89,7 +90,7 @@ authReady.then(() => {
         try {
             aiModalContent.innerHTML = '<p class="text-center py-8">La IA está pensando... Esto puede tardar unos segundos.</p>';
             const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
             const result = await response.json();
@@ -142,8 +143,6 @@ authReady.then(() => {
         return { allEvents, saldoInicial };
     }
     
-    // --- (Resto del código del dashboard: onSnapshot, renderNotifications, charts, calendar, etc.) ---
-    
     // --- LÓGICA DE NOTIFICACIONES ---
     async function renderNotifications() {
         if (!notificationsListEl) return;
@@ -187,6 +186,7 @@ authReady.then(() => {
         });
     }
 
+    // --- LÓGICA PRINCIPAL DEL DASHBOARD ---
     onSnapshot(collection(db, 'items'), async (snapshot) => {
         let totalActivos = 0, totalPasivos = 0;
         activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
