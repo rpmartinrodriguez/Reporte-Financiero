@@ -68,13 +68,11 @@
             <div class="bg-gradient-to-br from-green-500 to-green-600 text-white p-8 rounded-2xl shadow-lg"><h2 class="text-xl font-semibold opacity-80">Total Activos</h2><p id="total-activos" class="text-5xl font-bold mt-2">Cargando...</p></div>
             <div class="bg-gradient-to-br from-red-500 to-red-600 text-white p-8 rounded-2xl shadow-lg"><h2 class="text-xl font-semibold opacity-80">Total Pasivos</h2><p id="total-pasivos" class="text-5xl font-bold mt-2">Cargando...</p></div>
         </section>
-
         <section class="mb-12">
             <button id="analyze-flow-btn" class="ai-button">
                 ✨ Analizar Flujo de Caja con IA
             </button>
         </section>
-
         <section class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-12">
             <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Composición de Activos</h3><div class="chart-container"><canvas id="asset-composition-chart"></canvas></div></div>
             <div class="lg:col-span-3 bg-white rounded-xl shadow-md p-6"><h3 class="text-lg font-semibold text-gray-800 mb-4">Resumen General</h3><div class="chart-container"><canvas id="totals-chart"></canvas></div></div>
@@ -106,18 +104,14 @@
 
     <div id="ai-analysis-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50 p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-            <div class="p-6 border-b">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold text-gray-800">🤖 Análisis de Flujo de Caja por IA</h3>
-                    <button id="close-ai-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
-                </div>
-            </div>
-            <div id="ai-modal-content" class="p-6 overflow-y-auto">
-                <!-- El resultado de Gemini se insertará aquí -->
-            </div>
+            <div class="p-6 border-b"><div class="flex justify-between items-center"><h3 class="text-xl font-bold text-gray-800">🤖 Análisis de Flujo de Caja por IA</h3><button id="close-ai-modal" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button></div></div>
+            <div id="ai-modal-content" class="p-6 overflow-y-auto"></div>
         </div>
     </div>
-
+    
+    <script type="module">
+        window.VITE_GEMINI_API_KEY = "%VITE_GEMINI_API_KEY%";
+    </script>
     <script type="module" src="./js/main.js"></script>
     <script type="module" src="./js/dashboard.js"></script>
 </body>
