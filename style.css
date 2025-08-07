@@ -363,3 +363,28 @@ body {
 .action-button.danger:hover {
     background-color: #FEE2E2; /* bg-red-100 */
 }
+
+/* --- NUEVO ESTILO PARA NOTIFICACIÓN DE CHEQUE A PAGAR --- */
+.notification-icon.cheque-payment {
+    background-color: #E0E7FF; /* bg-indigo-100 */
+    color: #3730A3; /* text-indigo-800 */
+}
+
+/* --- ESTILOS PARA PANTALLAS PEQUEÑAS (MÓVIL) --- */
+@media (max-width: 640px) {
+    /* Oculta el texto del saldo en el calendario y lo hace más compacto */
+    .day-balance {
+        font-size: 0; /* Oculta el texto del número */
+    }
+    .calendar-day-link {
+        min-height: 40px; /* Reduce la altura de cada día */
+        padding: 0.25rem;
+    }
+    .day-number {
+        font-size: 0.75rem;
+    }
+    .today .day-number {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+}
