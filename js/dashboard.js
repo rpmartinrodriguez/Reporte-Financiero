@@ -39,7 +39,7 @@ authReady.then(() => {
         const futureDate = new Date(today);
         futureDate.setDate(today.getDate() + 7);
         
-        const { allEvents, saldoInicial } = await getFinancialDataForRange(null, null);
+        const { allEvents, saldoInicial } = await getFinancialDataForRange();
         
         let runningBalance = saldoInicial;
         for (const dateStr in allEvents) {
@@ -104,8 +104,9 @@ authReady.then(() => {
                 const subSnapshot = await getDocs(collection(db, 'items', parentDoc.id, config.sub));
                 subSnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data[config.dateField] && data[config.amountField] !== 0) {
-                        allEvents.push({ date: data[config.dateField], amount: data[config.amountField] * config.sign });
+                    const amount = data[config.amountField] || 0; // CORRECCIÓN: Usar 0 si el monto es undefined
+                    if (data[config.dateField] && amount !== 0) {
+                        allEvents.push({ date: data[config.dateField], amount: amount * config.sign });
                     }
                 });
             }
@@ -138,6 +139,15 @@ authReady.then(() => {
         return { allEvents: dailyTotals, saldoInicial };
     }
     
+    // --- (Resto del código del dashboard: onSnapshot, renderNotifications, charts, calendar, etc.) ---
+    
+    weeklySummaryBtn.addEventListener('click', generateWeeklySummary);
+    closeSummaryModalBtn.addEventListener('click', () => {
+        summaryModal.classList.add('hidden');
+        summaryModal.classList.remove('flex');
+    });
+
+    // --- (El resto del código sigue igual) ---
     async function renderNotifications() {
         if (!notificationsListEl) return;
         notificationsListEl.innerHTML = '<p class="text-gray-500">Buscando vencimientos...</p>';
@@ -197,7 +207,7 @@ authReady.then(() => {
                 activosListEl.appendChild(createDetailCard(item, finalDisplayValue));
                 if (finalDisplayValue > 0) { activosDataForChart.push({ label: item.nombre, value: finalDisplayValue }); }
             } else if (item.tipo === 'pasivo') {
-                totalPasivos += valueToSumAndDisplay;
+                totalPasivos += finalDisplayValue;
                 pasivosListEl.appendChild(createDetailCard(item, finalDisplayValue));
             }
         }
