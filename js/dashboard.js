@@ -25,16 +25,7 @@ authReady.then(() => {
     const formatCurrency = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value);
     const calendarFormat = (value) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
     
-    const pageMapping = { 
-        "Saldo Bancario": "bancos.html",
-        "Saldo Efectivo": "efectivo.html",
-        "Clientes a Cobrar": "clientes.html", 
-        "Cheques en cartera": "cheques-cartera.html", 
-        "Cheques pendiente de cobro": "cheques-pendientes.html", 
-        "Proveedores a pagar": "proveedores.html", 
-        "Cheques a pagar": "cheques-pagar.html",
-        "Gastos Fijos": "gastos-fijos.html"
-    };
+    const pageMapping = { "Saldo Bancario": "bancos.html", "Saldo Efectivo": "efectivo.html", "Clientes a Cobrar": "clientes.html", "Cheques en cartera": "cheques-cartera.html", "Cheques pendiente de cobro": "cheques-pendientes.html", "Proveedores a pagar": "proveedores.html", "Cheques a pagar": "cheques-pagar.html", "Gastos Fijos": "gastos-fijos.html" };
     
     // --- LÓGICA DE IA (GEMINI) ---
     async function analyzeCashFlow() {
@@ -43,8 +34,8 @@ authReady.then(() => {
         aiAnalysisModal.classList.add('flex');
         aiModalContent.innerHTML = '<p class="text-center py-8">Recolectando y analizando datos financieros...</p>';
 
-        const apiKey = window.VITE_GEMINI_API_KEY;
-        if (!apiKey || apiKey.startsWith("%VITE_")) {
+        const apiKey = window.GEMINI_API_KEY;
+        if (!apiKey) {
             aiModalContent.innerHTML = '<p class="text-red-500 text-center">Error: La clave de API de Gemini no está configurada. Por favor, añádela a las variables de entorno en Netlify y vuelve a desplegar el sitio.</p>';
             return;
         }
@@ -103,7 +94,6 @@ authReady.then(() => {
         }
     }
 
-    // --- LÓGICA DE DATOS GENERAL ---
     async function getFinancialDataForRange(startDate, endDate) {
         const balanceRef = doc(db, 'config', 'initial_balances');
         const balanceSnap = await getDoc(balanceRef);
@@ -143,7 +133,6 @@ authReady.then(() => {
         return { allEvents, saldoInicial };
     }
     
-    // --- LÓGICA DE NOTIFICACIONES ---
     async function renderNotifications() {
         if (!notificationsListEl) return;
         notificationsListEl.innerHTML = '<p class="text-gray-500">Buscando vencimientos...</p>';
@@ -186,7 +175,6 @@ authReady.then(() => {
         });
     }
 
-    // --- LÓGICA PRINCIPAL DEL DASHBOARD ---
     onSnapshot(collection(db, 'items'), async (snapshot) => {
         let totalActivos = 0, totalPasivos = 0;
         activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
@@ -204,7 +192,7 @@ authReady.then(() => {
                 activosListEl.appendChild(createDetailCard(item, finalDisplayValue));
                 if (finalDisplayValue > 0) { activosDataForChart.push({ label: item.nombre, value: finalDisplayValue }); }
             } else if (item.tipo === 'pasivo') {
-                totalPasivos += finalDisplayValue;
+                totalPasivos += valueToSumAndDisplay;
                 pasivosListEl.appendChild(createDetailCard(item, finalDisplayValue));
             }
         }
