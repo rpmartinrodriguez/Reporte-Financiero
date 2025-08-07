@@ -104,7 +104,7 @@ authReady.then(() => {
                 const subSnapshot = await getDocs(collection(db, 'items', parentDoc.id, config.sub));
                 subSnapshot.forEach(doc => {
                     const data = doc.data();
-                    const amount = data[config.amountField] || 0; // CORRECCIÓN: Usar 0 si el monto es undefined
+                    const amount = data[config.amountField] || 0;
                     if (data[config.dateField] && amount !== 0) {
                         allEvents.push({ date: data[config.dateField], amount: amount * config.sign });
                     }
@@ -139,50 +139,88 @@ authReady.then(() => {
         return { allEvents: dailyTotals, saldoInicial };
     }
     
-    // --- (Resto del código del dashboard: onSnapshot, renderNotifications, charts, calendar, etc.) ---
-    
-    weeklySummaryBtn.addEventListener('click', generateWeeklySummary);
-    closeSummaryModalBtn.addEventListener('click', () => {
-        summaryModal.classList.add('hidden');
-        summaryModal.classList.remove('flex');
-    });
-
-    // --- (El resto del código sigue igual) ---
+    // --- LÓGICA DE NOTIFICACIONES (ACTUALIZADA) ---
     async function renderNotifications() {
         if (!notificationsListEl) return;
         notificationsListEl.innerHTML = '<p class="text-gray-500">Buscando vencimientos...</p>';
+        
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const sevenDaysFromNow = new Date(today);
         sevenDaysFromNow.setDate(today.getDate() + 7);
+
         const itemsSnapshot = await getDocs(collection(db, 'items'));
         const allNotifications = [];
-        const notificationConfigs = [ { name: "Clientes a Cobrar", sub: "facturas", dateField: "fecha_vencimiento", descField: "nombre", amountField: "saldo_neto", type: "cobro" }, { name: "Cheques en cartera", sub: "cheques_detalle_cartera", dateField: "fecha_cobro", descField: "librador", amountField: "monto", type: "deposito" }, { name: "Proveedores a pagar", sub: "facturas_proveedores", dateField: "fecha_vencimiento", descField: "proveedor", amountField: "saldo", type: "pago" } ];
+        const notificationConfigs = [
+            { name: "Clientes a Cobrar", sub: "facturas", dateField: "fecha_vencimiento", descField: "nombre", amountField: "saldo_neto", type: "cobro", status: ["Pendiente"] },
+            { name: "Cheques en cartera", sub: "cheques_detalle_cartera", dateField: "fecha_cobro", descField: "librador", amountField: "monto", type: "deposito", status: ["En cartera"] },
+            { name: "Proveedores a pagar", sub: "facturas_proveedores", dateField: "fecha_vencimiento", descField: "proveedor", amountField: "saldo", type: "pago", status: ["Pendiente"] },
+            { name: "Cheques a pagar", sub: "cheques_emitidos", dateField: "fecha_emision", descField: "destinatario", amountField: "monto", type: "pago_cheque", status: ["Emitido"] }
+        ];
+
         for (const config of notificationConfigs) {
             const parentDoc = itemsSnapshot.docs.find(doc => doc.data().nombre === config.name);
             if (parentDoc) {
                 const subSnapshot = await getDocs(collection(db, 'items', parentDoc.id, config.sub));
                 subSnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data.estado === "Pendiente" || data.estado === "En cartera") {
+                    if (config.status.includes(data.estado)) {
                         const eventDate = new Date(data[config.dateField] + 'T00:00:00');
-                        if (eventDate <= sevenDaysFromNow) { allNotifications.push({ ...data, type: config.type, date: eventDate, desc: data[config.descField], amount: data[config.amountField] }); }
+                        if (eventDate <= sevenDaysFromNow) {
+                            allNotifications.push({ ...data, type: config.type, date: eventDate, desc: data[config.descField], amount: data[config.amountField] });
+                        }
                     }
                 });
             }
         }
+
+        const gastosFijosParentDoc = itemsSnapshot.docs.find(doc => doc.data().nombre === "Gastos Fijos");
+        if (gastosFijosParentDoc) {
+            const gastosFijosSnap = await getDocs(collection(db, 'items', gastosFijosParentDoc.id, 'gastos_detalle'));
+            const currentYear = today.getFullYear();
+            const currentMonth = today.getMonth();
+            const monthId = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            
+            for (const gastoDoc of gastosFijosSnap.docs) {
+                const gastoData = gastoDoc.data();
+                const dueDate = new Date(currentYear, currentMonth, gastoData.dia_vencimiento);
+                if (dueDate <= sevenDaysFromNow && dueDate >= today) {
+                    const paymentRef = doc(db, gastoDoc.ref.path, 'pagos_realizados', monthId);
+                    const paymentSnap = await getDoc(paymentRef);
+                    if (!paymentSnap.exists()) {
+                        allNotifications.push({ type: 'pago', date: dueDate, desc: gastoData.descripcion, amount: gastoData.monto });
+                    }
+                }
+            }
+        }
+
         allNotifications.sort((a, b) => a.date - b.date);
+
         if (allNotifications.length === 0) {
             notificationsListEl.innerHTML = '<p class="text-gray-500">No hay vencimientos próximos en los siguientes 7 días.</p>';
             return;
         }
+
         notificationsListEl.innerHTML = '';
         allNotifications.forEach(item => {
             const isOverdue = item.date < today;
-            const iconClass = item.type === 'pago' ? 'overdue' : (isOverdue ? 'overdue' : (item.type === 'deposito' ? 'deposit' : 'upcoming'));
-            const iconSVG = { pago: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>', cobro: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01"></path></svg>', deposito: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>' }[item.type];
-            const text = { pago: `Pagar factura a <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`, cobro: `Cobrar factura a <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`, deposito: `Depositar cheque de <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.` }[item.type];
+            const iconClass = item.type.includes('pago') ? 'overdue' : (isOverdue ? 'overdue' : (item.type === 'deposito' ? 'deposit' : 'upcoming'));
+            const iconSVG = {
+                pago: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>',
+                cobro: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01"></path></svg>',
+                deposito: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>',
+                pago_cheque: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z"></path></svg>'
+            }[item.type];
+
+            const text = {
+                pago: `Pagar <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`,
+                cobro: `Cobrar factura a <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`,
+                deposito: `Depositar cheque de <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`,
+                pago_cheque: `Cheque emitido a <strong>${item.desc}</strong> por <strong>${formatCurrency(item.amount)}</strong>.`
+            }[item.type];
+            
             const dateText = isOverdue ? `Venció el ${item.date.toLocaleDateString('es-ES')}` : `Vence el ${item.date.toLocaleDateString('es-ES')}`;
+
             const notificationEl = document.createElement('div');
             notificationEl.className = 'notification-item';
             notificationEl.innerHTML = `<div class="notification-icon ${iconClass}">${iconSVG}</div><div class="notification-content"><p class="notification-text">${text}</p><p class="notification-date">${dateText}</p></div>`;
@@ -190,6 +228,7 @@ authReady.then(() => {
         });
     }
 
+    // --- LÓGICA PRINCIPAL DEL DASHBOARD ---
     onSnapshot(collection(db, 'items'), async (snapshot) => {
         let totalActivos = 0, totalPasivos = 0;
         activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
@@ -207,7 +246,7 @@ authReady.then(() => {
                 activosListEl.appendChild(createDetailCard(item, finalDisplayValue));
                 if (finalDisplayValue > 0) { activosDataForChart.push({ label: item.nombre, value: finalDisplayValue }); }
             } else if (item.tipo === 'pasivo') {
-                totalPasivos += finalDisplayValue;
+                totalPasivos += valueToSumAndDisplay;
                 pasivosListEl.appendChild(createDetailCard(item, finalDisplayValue));
             }
         }
