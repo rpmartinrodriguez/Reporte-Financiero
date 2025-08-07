@@ -108,32 +108,36 @@ authReady.then(() => {
         let totalActivos = 0, totalPasivos = 0;
         activosListEl.innerHTML = ''; pasivosListEl.innerHTML = '';
         const itemsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), ref: doc.ref }));
-        const activosData = [];
+        const activosDataForChart = [];
 
         for (const item of itemsData) {
-            let displayValue = item.valor;
+            let valueToSumAndDisplay = item.valor;
 
+            // Lógica especial para Gastos Fijos: su valor es la suma de sus partes.
             if (item.nombre === "Gastos Fijos") {
                 const gastosSnap = await getDocs(collection(item.ref, 'gastos_detalle'));
-                displayValue = gastosSnap.docs.reduce((sum, doc) => sum + doc.data().monto, 0);
+                valueToSumAndDisplay = gastosSnap.docs.reduce((sum, doc) => sum + doc.data().monto, 0);
             }
 
-            const finalDisplayValue = item.tipo === 'activo' ? Math.max(0, displayValue) : displayValue;
-
             if (item.tipo === 'activo') {
+                // Para los activos, no mostramos saldos negativos en el dashboard.
+                const finalDisplayValue = Math.max(0, valueToSumAndDisplay);
                 totalActivos += finalDisplayValue;
                 activosListEl.appendChild(createDetailCard(item, finalDisplayValue));
-                if (finalDisplayValue > 0) activosData.push({ label: item.nombre, value: finalDisplayValue });
+                if (finalDisplayValue > 0) {
+                    activosDataForChart.push({ label: item.nombre, value: finalDisplayValue });
+                }
             } else if (item.tipo === 'pasivo') {
-                totalPasivos += finalDisplayValue;
-                pasivosListEl.appendChild(createDetailCard(item, finalDisplayValue));
+                totalPasivos += valueToSumAndDisplay;
+                pasivosListEl.appendChild(createDetailCard(item, valueToSumAndDisplay));
             }
         }
 
         totalActivosEl.textContent = formatCurrency(totalActivos);
         totalPasivosEl.textContent = formatCurrency(totalPasivos);
         updateTotalsChart(totalActivos, totalPasivos);
-        updateAssetCompositionChart(activosData);
+        updateAssetCompositionChart(activosDataForChart);
+        
         if (activosListEl.innerHTML === '') activosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de activo.</p>';
         if (pasivosListEl.innerHTML === '') pasivosListEl.innerHTML = '<p class="text-gray-500">No hay cuentas de pasivo.</p>';
         
