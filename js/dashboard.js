@@ -14,10 +14,10 @@ authReady.then(() => {
     const nextMonthBtn = document.getElementById('next-month');
     const totalsChartCtx = document.getElementById('totals-chart')?.getContext('2d');
     const assetCompositionChartCtx = document.getElementById('asset-composition-chart')?.getContext('2d');
-    const analyzeFlowBtn = document.getElementById('analyze-flow-btn');
-    const aiAnalysisModal = document.getElementById('ai-analysis-modal');
-    const closeAiModalBtn = document.getElementById('close-ai-modal');
-    const aiModalContent = document.getElementById('ai-modal-content');
+    const weeklySummaryBtn = document.getElementById('weekly-summary-btn');
+    const summaryModal = document.getElementById('summary-modal');
+    const closeSummaryModalBtn = document.getElementById('close-summary-modal');
+    const summaryModalContent = document.getElementById('summary-modal-content');
     
     let totalsChart;
     let assetCompositionChart;
@@ -27,74 +27,71 @@ authReady.then(() => {
     
     const pageMapping = { "Saldo Bancario": "bancos.html", "Saldo Efectivo": "efectivo.html", "Clientes a Cobrar": "clientes.html", "Cheques en cartera": "cheques-cartera.html", "Cheques pendiente de cobro": "cheques-pendientes.html", "Proveedores a pagar": "proveedores.html", "Cheques a pagar": "cheques-pagar.html", "Gastos Fijos": "gastos-fijos.html" };
     
-    // --- LÓGICA DE IA (GEMINI) ---
-    async function analyzeCashFlow() {
-        if (!aiAnalysisModal || !aiModalContent) return;
-        aiAnalysisModal.classList.remove('hidden');
-        aiAnalysisModal.classList.add('flex');
-        aiModalContent.innerHTML = '<p class="text-center py-8">Recolectando y analizando datos financieros...</p>';
-
-        const apiKey = window.GEMINI_API_KEY;
-        if (!apiKey) {
-            aiModalContent.innerHTML = '<p class="text-red-500 text-center">Error: La clave de API de Gemini no está configurada. Por favor, añádela a las variables de entorno en Netlify y vuelve a desplegar el sitio.</p>';
-            return;
-        }
+    // --- LÓGICA DEL RESUMEN SEMANAL ---
+    async function generateWeeklySummary() {
+        if (!summaryModal || !summaryModalContent) return;
+        summaryModal.classList.remove('hidden');
+        summaryModal.classList.add('flex');
+        summaryModalContent.innerHTML = '<p class="text-center py-8">Calculando resumen...</p>';
 
         const today = new Date();
-        const futureDate = new Date();
-        futureDate.setDate(today.getDate() + 30);
+        today.setHours(0,0,0,0);
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + 7);
         
-        const { allEvents, saldoInicial } = await getFinancialDataForRange(null, futureDate);
+        const { allEvents, saldoInicial } = await getFinancialDataForRange(null, null);
         
-        const dailyTotals = allEvents.reduce((acc, event) => {
-            const date = event.date;
-            if (!acc[date]) { acc[date] = { ingresos: 0, egresos: 0 }; }
-            if (event.amount > 0) { acc[date].ingresos += event.amount; }
-            else { acc[date].egresos += Math.abs(event.amount); }
-            return acc;
-        }, {});
-
         let runningBalance = saldoInicial;
-        let projectionText = `Saldo inicial: ${formatCurrency(saldoInicial)}.\nProyección de flujo de caja para los próximos 30 días:\n`;
-        
-        for (let i = 0; i < 30; i++) {
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const totals = dailyTotals[dateStr] || { ingresos: 0, egresos: 0 };
-            runningBalance += totals.ingresos - totals.egresos;
-            if (totals.ingresos !== 0 || totals.egresos !== 0) {
-                projectionText += `- ${dateStr}: Ingresos: ${formatCurrency(totals.ingresos)}, Egresos: ${formatCurrency(totals.egresos)}, Saldo Proyectado: ${formatCurrency(runningBalance)}\n`;
+        for (const dateStr in allEvents) {
+            if (new Date(dateStr + 'T00:00:00') < today) {
+                runningBalance += allEvents[dateStr].netChange;
             }
         }
 
-        const prompt = `Actúa como un asesor financiero experto para una pequeña empresa. Analiza los siguientes datos de flujo de caja proyectado para los próximos 30 días. Tu tarea es identificar riesgos, resaltar oportunidades y dar recomendaciones claras y accionables. El análisis debe ser fácil de entender para alguien sin conocimientos financieros profundos.
+        let weeklyIngresos = 0;
+        let weeklyEgresos = 0;
+        let dayWithHighestIncome = { date: null, amount: -Infinity };
+        let dayWithHighestExpense = { date: null, amount: -Infinity };
+        let dayWithLowestBalance = { date: null, balance: runningBalance };
 
-        Datos del Flujo de Caja:
-        ${projectionText}
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(today.getDate() + i);
+            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+            const totals = allEvents[dateStr] || { netChange: 0, ingresos: 0, egresos: 0 };
+            
+            weeklyIngresos += totals.ingresos;
+            weeklyEgresos += totals.egresos;
+            runningBalance += totals.netChange;
 
-        Tu respuesta debe estar formateada en HTML simple (usa p, h4, ul, li, strong) y debe incluir:
-        1.  Un **Resumen General** de la situación financiera.
-        2.  Una sección de **⚠️ Riesgos Potenciales** donde identifiques los días o semanas con mayor riesgo de falta de liquidez (cuando el saldo se acerca a cero o es negativo).
-        3.  Una sección de **💡 Oportunidades y Sugerencias** con acciones concretas que el usuario puede tomar. Por ejemplo, si ves un pago grande a un proveedor antes de un cobro importante, sugiere negociar la fecha de pago. Si ves cheques por cobrar, sugiere contactar a los clientes. Sé específico.`;
-
-        try {
-            aiModalContent.innerHTML = '<p class="text-center py-8">La IA está pensando... Esto puede tardar unos segundos.</p>';
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!response.ok) throw new Error(`Error de red: ${response.statusText}`);
-            const result = await response.json();
-            if (result.candidates && result.candidates.length > 0) {
-                aiModalContent.innerHTML = result.candidates[0].content.parts[0].text;
-            } else { throw new Error("No se recibió una respuesta válida de la IA."); }
-        } catch (error) {
-            console.error("Error llamando a la API de Gemini:", error);
-            aiModalContent.innerHTML = '<p class="text-red-500">Hubo un error al generar el análisis. Por favor, intenta de nuevo.</p>';
+            if (totals.ingresos > dayWithHighestIncome.amount) {
+                dayWithHighestIncome = { date: dateStr, amount: totals.ingresos };
+            }
+            if (totals.egresos > dayWithHighestExpense.amount) {
+                dayWithHighestExpense = { date: dateStr, amount: totals.egresos };
+            }
+            if (runningBalance < dayWithLowestBalance.balance) {
+                dayWithLowestBalance = { date: dateStr, balance: runningBalance };
+            }
         }
+
+        const weeklyNeto = weeklyIngresos - weeklyEgresos;
+
+        summaryModalContent.innerHTML = `
+            <div class="space-y-4">
+                <div class="summary-item"><span class="summary-label">Total Ingresos Próximos 7 Días:</span><span class="summary-value text-green-600">${formatCurrency(weeklyIngresos)}</span></div>
+                <div class="summary-item"><span class="summary-label">Total Egresos Próximos 7 Días:</span><span class="summary-value text-red-600">${formatCurrency(weeklyEgresos)}</span></div>
+                <div class="summary-item font-bold"><span class="summary-label">Saldo Neto de la Semana:</span><span class="summary-value ${weeklyNeto >= 0 ? 'text-blue-600' : 'text-red-600'}">${formatCurrency(weeklyNeto)}</span></div>
+                <div class="pt-4 border-t">
+                    <div class="summary-item"><span class="summary-label">📈 Día de Mayor Ingreso:</span><span class="summary-value">${dayWithHighestIncome.amount > 0 ? `${dayWithHighestIncome.date} (${formatCurrency(dayWithHighestIncome.amount)})` : 'N/A'}</span></div>
+                    <div class="summary-item"><span class="summary-label">📉 Día de Mayor Egreso:</span><span class="summary-value">${dayWithHighestExpense.amount > 0 ? `${dayWithHighestExpense.date} (${formatCurrency(dayWithHighestExpense.amount)})` : 'N/A'}</span></div>
+                    <div class="summary-item"><span class="summary-label">⚠️ Día con Saldo Proyectado más Bajo:</span><span class="summary-value">${dayWithLowestBalance.date ? `${dayWithLowestBalance.date} (${formatCurrency(dayWithLowestBalance.balance)})` : 'N/A'}</span></div>
+                </div>
+            </div>
+        `;
     }
 
-    async function getFinancialDataForRange(startDate, endDate) {
+    async function getFinancialDataForRange() {
         const balanceRef = doc(db, 'config', 'initial_balances');
         const balanceSnap = await getDoc(balanceRef);
         const saldoInicial = balanceSnap.exists() ? balanceSnap.data().saldo_bancario_inicial : 0;
@@ -107,8 +104,7 @@ authReady.then(() => {
                 const subSnapshot = await getDocs(collection(db, 'items', parentDoc.id, config.sub));
                 subSnapshot.forEach(doc => {
                     const data = doc.data();
-                    const eventDate = new Date(data[config.dateField] + 'T00:00:00');
-                    if (data[config.dateField] && data[config.amountField] !== 0 && (!startDate || eventDate >= startDate) && (!endDate || eventDate <= endDate)) {
+                    if (data[config.dateField] && data[config.amountField] !== 0) {
                         allEvents.push({ date: data[config.dateField], amount: data[config.amountField] * config.sign });
                     }
                 });
@@ -130,7 +126,16 @@ authReady.then(() => {
                 }
             }
         }
-        return { allEvents, saldoInicial };
+        
+        const dailyTotals = allEvents.reduce((acc, event) => {
+            if (!acc[event.date]) acc[event.date] = { netChange: 0, ingresos: 0, egresos: 0 };
+            acc[event.date].netChange += event.amount;
+            if (event.amount > 0) acc[event.date].ingresos += event.amount;
+            else acc[event.date].egresos += Math.abs(event.amount);
+            return acc;
+        }, {});
+
+        return { allEvents: dailyTotals, saldoInicial };
     }
     
     async function renderNotifications() {
@@ -229,12 +234,8 @@ authReady.then(() => {
     async function renderCalendarWidget() {
         if (!calendarGrid) return;
         calendarGrid.innerHTML = '<div class="col-span-7 text-center py-10">Calculando flujo de caja...</div>';
-        const { allEvents, saldoInicial } = await getFinancialDataForRange(null, null);
-        const dailyTotals = allEvents.reduce((acc, event) => {
-            if (!acc[event.date]) acc[event.date] = { netChange: 0 };
-            acc[event.date].netChange += event.amount;
-            return acc;
-        }, {});
+        const { allEvents, saldoInicial } = await getFinancialDataForRange();
+        const dailyTotals = allEvents;
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         monthYearDisplay.textContent = new Intl.DateTimeFormat('es-ES', { month: 'long', year: 'numeric' }).format(currentDate);
@@ -260,10 +261,10 @@ authReady.then(() => {
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendarWidget(); });
     }
 
-    analyzeFlowBtn.addEventListener('click', analyzeCashFlow);
-    closeAiModalBtn.addEventListener('click', () => {
-        aiAnalysisModal.classList.add('hidden');
-        aiAnalysisModal.classList.remove('flex');
+    weeklySummaryBtn.addEventListener('click', generateWeeklySummary);
+    closeSummaryModalBtn.addEventListener('click', () => {
+        summaryModal.classList.add('hidden');
+        summaryModal.classList.remove('flex');
     });
 
     renderCalendarWidget();
